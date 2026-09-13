@@ -1,0 +1,77 @@
+# Internal product and technical design sources
+/PRODUCT.md
+/TECH_STACK.md
+/DATABASE_DESIGN.md
+/SELF_HOSTING_AND_AUTH.md
+/DESIGN.md
+
+# Internal UI references and mockups
+/ui-mockup/
+/ui-mockup-backup/
+
+# Local agent and design-tool metadata
+/.agents/
+/.claude/
+/.codex/
+/.impeccable/
+
+# Dependencies and package-manager caches
+/node_modules/
+/.pnpm-store/
+/.yarn/cache/
+/.yarn/install-state.gz
+
+# Next.js, build, and generated output
+/.next/
+/out/
+/dist/
+/build/
+/.turbo/
+/.vercel/
+*.tsbuildinfo
+next-env.d.ts
+
+# Test and coverage output
+/coverage/
+/playwright-report/
+/test-results/
+/blob-report/
+/.vitest/
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Local financial data, imports, exports, and database files
+/private-data/
+/local-data/
+/uploads/
+/exports/
+/backups/
+*.sqlite
+*.sqlite3
+*.db
+*.dump
+
+# Logs and local runtime files
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.pid
+*.pid.lock
+
+# Editors and operating systems
+/.idea/
+/.vscode/
+.DS_Store
+Thumbs.db
+*~
+*.swp
+*.swo
