@@ -1,0 +1,68 @@
+{
+  "name": "networth",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": "22.x"
+  },
+  "packageManager": "npm@10.9.8",
+  "scripts": {
+    "dev": "next dev --webpack --hostname 127.0.0.1",
+    "build": "next build --webpack",
+    "start": "next start --hostname 127.0.0.1",
+    "lint": "eslint . --max-warnings=0",
+    "typecheck": "next typegen && tsc --noEmit",
+    "test": "vitest run --project unit",
+    "test:watch": "vitest --project unit",
+    "test:integration": "vitest run --project integration",
+    "test:e2e": "playwright test",
+    "check": "npm run lint && npm run typecheck && npm test && npm run build",
+    "local:setup": "node scripts/setup-local.mjs",
+    "db:up": "docker compose up -d --wait db",
+    "db:stop": "docker compose stop db",
+    "db:generate": "drizzle-kit generate",
+    "inngest:dev": "inngest-cli dev --host 127.0.0.1 --no-discovery -u http://127.0.0.1:3000/api/inngest"
+  },
+  "dependencies": {
+    "@node-rs/argon2": "2.2.1",
+    "decimal.js": "10.6.0",
+    "drizzle-orm": "0.45.2",
+    "inngest": "4.20.0",
+    "next": "16.3.5",
+    "next-auth": "5.0.0-beta.32",
+    "pg": "8.23.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "server-only": "0.0.1",
+    "zod": "4.6.4"
+  },
+  "devDependencies": {
+    "@auth/core": "0.41.3",
+    "@playwright/test": "1.63.0",
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/node": "22.20.2",
+    "@types/pg": "8.23.1",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "drizzle-kit": "0.31.10",
+    "eslint": "9.39.5",
+    "eslint-config-next": "16.3.5",
+    "inngest-cli": "1.44.0",
+    "tailwindcss": "4.3.3",
+    "tsx": "4.23.13",
+    "typescript": "5.9.3",
+    "vitest": "4.1.11",
+    "vite": "7.3.6",
+    "@next/env": "16.3.5"
+  },
+  "overrides": {
+    "vite": "$vite",
+    "@esbuild-kit/core-utils": {
+      "esbuild": "0.25.12"
+    },
+    "inngest-cli": {
+      "adm-zip": "0.6.1"
+    }
+  }
+}

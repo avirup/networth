@@ -1,0 +1,16 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: light;
+  --page: #f1f2ff;
+  --ink: #17182b;
+  --muted: #62677d;
+  --accent: #5847c6;
+}
+
+/* Temporary runtime screen. Step 2 extracts the full Poppins design system. */
+body { margin: 0; background: var(--page); color: var(--ink); font-family: Arial, sans-serif; }
+main { max-width: 42rem; margin-inline: auto; padding: clamp(32px, 10vw, 96px) 24px; }
+.brand { color: var(--accent); font-weight: 700; margin-bottom: 64px; }
+h1 { font-size: clamp(28px, 6vw, 44px); line-height: 1.15; letter-spacing: -.03em; }
+p { line-height: 1.6; color: var(--muted); }

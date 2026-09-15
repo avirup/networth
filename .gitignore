@@ -18,6 +18,7 @@
 
 # Dependencies and package-manager caches
 /node_modules/
+/.cache/
 /.pnpm-store/
 /.yarn/cache/
 /.yarn/install-state.gz

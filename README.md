@@ -1,2 +1,80 @@
 # networth
-A personal finance tracker that can be hosted for free on vercel
+
+A private household finance tracker built around reviewed, standardized CSV imports
+and a ₹0 recurring hosting target: Vercel Hobby, Neon Free Postgres and Inngest Hobby.
+
+**Current status: runtime foundation only.** The app shows a sign-in placeholder.
+Owner setup, authentication, imports and financial reports are not enabled yet.
+No hosted services are provisioned by these commands.
+
+## Local development
+
+Requirements: Node 22 (see `.nvmrc`), npm 10.9.8 and Docker with Compose.
+
+```bash
+nvm use
+npm ci
+npm run local:setup
+npm run db:up
+npm run dev
+```
+
+Open [localhost:3000](http://127.0.0.1:3000). `local:setup` creates a Git-ignored,
+owner-readable `.env.local` with independent random secrets and the local database
+URLs. It preserves an existing file. `.env.example` documents variable names without
+credentials. Never use the public Compose development password in a deployment.
+
+In a second terminal, start the optional local Inngest Dev Server:
+
+```bash
+npm run inngest:dev
+```
+
+The local endpoint registers no jobs yet. There is no paid service or production key
+required for local development. The Compose database binds only to loopback port 15432
+and keeps data in the `networth-local_postgres-data` volume. `npm run db:stop` stops it
+without deleting that volume. Integration checks use the separate `networth_test`
+database and create/drop only a uniquely named test schema.
+
+## Verification
+
+Stop the development server before running verification so its route-type generation
+does not race with the typecheck/build commands.
+
+```bash
+npm run check
+npm run test:integration
+npx playwright install chromium
+npm run test:e2e
+node scripts/check-client-secrets.mjs
+```
+
+`check` runs lint, route generation/typecheck, unit tests and a production build.
+Integration tests require the running local database and fail clearly if its config
+is missing; they refuse a remote host or any database other than `networth_test`.
+Browser tests require the preceding production build and launch isolated test servers
+on ports 3100/3101 for missing-configuration and preview cases, on desktop and mobile.
+On Linux, Playwright may also require browser OS libraries (`npx playwright install --with-deps chromium`).
+The client-output check scans built static assets for configured local secret values
+without printing those values. Review deployment logs/bundles again before publication.
+
+Other commands: `npm run test:watch`, `npm run db:generate` (offline schema generation)
+and `npm start` (serve the existing production build). Local development credentials
+deliberately do not satisfy hosted/production readiness requirements.
+
+## Safety and implementation notes
+
+- Public liveness: `/api/health`; generic financial readiness: `/api/health/ready`.
+  Readiness stays 503 until the later installation and workflow steps are implemented.
+- Root redirects to `/login`. Financial and auth endpoints are not implemented, and
+  hosted Inngest execution is disabled. No setup or migration runs at startup/build.
+- Previews cannot access the database or run workflows even if they inherit credentials.
+- Credentials plus Auth.js's built-in database strategy are incompatible in the pinned
+  version. The isolated test demonstrates a supported encrypted cookie with a revocable
+  Postgres registry; it is not a production login implementation.
+- Real financial data, exports, secrets, and private implementation notes stay out of Git.
+- Free-provider allowances and deployment configuration must be reverified before hosting.
+
+See [architecture and directory boundaries](docs/architecture.md),
+[the authentication compatibility decision](docs/decisions/0001-auth-session-compatibility.md),
+and [project instructions](AGENTS.md).
