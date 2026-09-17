@@ -12,8 +12,9 @@ const env = {
   NODE_ENV: "production", VERCEL: "", VERCEL_ENV: "",
   DATABASE_URL: "", AUTH_SECRET: "", BOOTSTRAP_SECRET: "", APP_URL: "",
   INNGEST_EVENT_KEY: "", INNGEST_SIGNING_KEY: "", INNGEST_SIGNING_KEY_FALLBACK: "", INNGEST_DEV: "0",
-  TEST_DATABASE_URL: "",
+  TEST_DATABASE_URL: "", LOCAL_UI_PREVIEW: "1",
 };
+if (mode === "missing") env.APP_URL = `http://127.0.0.1:${port}`;
 if (mode === "preview") Object.assign(env, {
   VERCEL: "1", VERCEL_ENV: "preview",
   // Syntactically configured, deliberately unreachable DB proves previews never query it.
