@@ -4,6 +4,7 @@ const config: NextConfig = {
   // Keep the project's deliberately authored AGENTS.md unchanged on `next dev`.
   agentRules: false,
   poweredByHeader: false,
+  outputFileTracingIncludes: { "/api/identity/*": ["./db/migrations/*.sql"] },
   serverExternalPackages: ["@node-rs/argon2", "pg"],
   async headers() {
     return [{

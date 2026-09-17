@@ -5,11 +5,12 @@ const example = `${base}/preview/overview?month=2026-09`;
 test("preview is isolated and public setup/status stay honest", async ({ page, request }) => {
   expect((await request.get("http://127.0.0.1:3101/preview")).status()).toBe(404);
   expect((await request.get(`${base}/preview/unknown`)).status()).toBe(404);
-  for (const path of ["/setup", "/status"]) {
-    await page.goto(`${base}${path}`);
-    await expect(page.getByText(/not available yet/)).toBeVisible();
-    await expect(page.locator("input, form")).toHaveCount(0);
-  }
+  await page.goto(`${base}/setup`);
+  await expect(page.getByText("Configure these server settings before setup:", { exact: false })).toBeVisible();
+  await expect(page.getByLabel("Setup code", { exact: true })).toBeVisible();
+  await page.goto(`${base}/status`);
+  await expect(page).toHaveURL(`${base}/login`);
+
 });
 
 test("report month updates context, blocks future months, and returns focus", async ({ page }) => {

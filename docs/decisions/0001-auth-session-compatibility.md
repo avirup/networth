@@ -1,7 +1,8 @@
 # Credentials and revocable sessions
 
-Status: compatibility candidate verified by eight real-Postgres integration tests;
-no application login route is enabled. Step 3 owns production integration.
+Status: adopted in Phase 3. Application login uses the session-registry approach,
+with identity/authorization integration and browser coverage. Hosted native-runtime
+benchmarking remains a deployment check.
 
 The original design specifies Auth.js credentials with a Drizzle-backed database
 session strategy. The pinned `next-auth@5.0.0-beta.32` uses `@auth/core@0.41.3`,
@@ -9,7 +10,7 @@ whose configuration validator rejects credentials-only authentication with
 `session.strategy = "database"` (`UnsupportedStrategy`). This is a real library
 constraint, not something an adapter installation fixes.
 
-The proposed compatible implementation uses Auth.js's supported encrypted JWT
+The compatible implementation uses Auth.js's supported encrypted JWT
 cookie with an application-owned Postgres session registry accessed through Drizzle:
 
 1. Verify the password server-side with Argon2id.
@@ -35,11 +36,10 @@ users/wrong passwords, registry persistence, new-login rotation, revocation,
 expiry, registry outage and sign-out reuse. The test configuration uses synthetic
 credentials and is deliberately excluded from application imports.
 
-Step 3 must integrate this candidate with the reviewed installation/auth schema,
-membership checks, secure production cookies, trusted origin/host configuration,
-generic errors, rate limits, last-owner protection, audit events, invitations,
-recovery and rotation rules. Recheck compatibility when upgrading the pinned beta.
-Do not enable login by copying the test fixture into a route.
+The application implementation adds reviewed installation/auth migrations, active
+membership checks, canonical host/origin validation, rate limits, last-owner guards,
+audited invitations and recovery. See [authentication operations](../authentication.md).
+Recheck compatibility when upgrading the pinned beta.
 
 Argon2id parameters are 64 MiB, three passes, one lane and a 32-byte output,
 with independent random salts and parameters encoded in each hash. Native behavior

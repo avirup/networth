@@ -111,3 +111,24 @@ dialog { color: var(--ink); background: var(--surface); }dialog::backdrop { back
 .chart-preview { position: relative; }
 .chart-tooltip { position: absolute; top: 12px; left: 12px; z-index: 2; max-width: min(250px, calc(100% - 24px)); padding: 9px 12px; border-radius: 8px; background: var(--ink); color: var(--surface); font-size: 11px; line-height: 1.5; pointer-events: none; }
 [data-chart-mark]:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+/* Identity flows extend the existing quiet, single-column access surface. */
+.auth-form { display: grid; gap: 18px; max-width: 480px; margin-top: 28px; }
+.auth-form h2 { font-size: 21px; margin: 0; }
+.auth-form p { font-size: 13px; color: var(--muted); margin: 0; line-height: 1.7; }
+.form-field { display: grid; gap: 8px; font-size: 13px; font-weight: 500; }
+.form-field input, .form-field select { width: 100%; min-height: 46px; border: 1px solid var(--line-strong); border-radius: 10px; background: var(--surface); padding: 10px 12px; font-size: 16px; font-weight: 400; }
+.form-help { font-size: 12px; font-weight: 400; color: var(--muted); }
+.auth-form .form-error, .form-error { color: var(--negative); font-size: 13px; }
+.check-label { display: flex; align-items: start; gap: 10px; font-size: 13px; }
+.check-label input { margin-top: 4px; width: 18px; height: 18px; accent-color: var(--accent); }
+.recovery-codes { padding: 18px; margin: 0; list-style: none; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; display: grid; gap: 10px; }
+.recovery-codes code { font-size: clamp(11px, 3vw, 14px); overflow-wrap: anywhere; }
+.security-sections { max-width: 780px; display: grid; gap: 24px; }
+.security-section { padding: 24px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
+.security-section h2 { margin-top: 0; font-size: 20px; }
+.security-section p { font-size: 13px; color: var(--muted); }
+.member-row { border-top: 1px solid var(--line); padding-block: 20px; display: grid; gap: 12px; }
+.member-row strong, .member-row span { overflow-wrap: anywhere; }
+.member-controls { display: flex; gap: 12px; flex-wrap: wrap; align-items: end; }
+.private-link { display: block; overflow-wrap: anywhere; background: var(--surface); padding: 16px; border: 1px solid var(--line); font-size: 13px; user-select: all; }

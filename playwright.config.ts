@@ -5,6 +5,7 @@ const browserName = process.env.PLAYWRIGHT_BROWSER === "firefox" ? "firefox" : "
 
 export default defineConfig({
   testDir: "./tests/e2e",
+  outputDir: "test-results/runtime",
   fullyParallel: true,
   workers: 2,
   forbidOnly: !!process.env.CI,

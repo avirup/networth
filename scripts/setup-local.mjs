@@ -8,7 +8,8 @@ if (process.env.VERCEL || process.env.NODE_ENV === "production") {
 const origin = "postgresql://networth_local:local-development-only@127.0.0.1:15432";
 const contents = [
   "# Local development only. Generated secrets; never commit this file.",
-  `DATABASE_URL=${origin}/networth_local`,
+  `DATABASE_URL=postgresql://networth_app:local-runtime-only@127.0.0.1:15432/networth_local`,
+  `DATABASE_ADMIN_URL=${origin}/networth_local`,
   `TEST_DATABASE_URL=${origin}/networth_test`,
   `AUTH_SECRET=${randomBytes(32).toString("hex")}`,
   `BOOTSTRAP_SECRET=${randomBytes(32).toString("hex")}`,

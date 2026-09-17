@@ -1,8 +1,8 @@
 # Runtime foundation
 
-This repository is currently at implementation Step 1. It has a runnable Next.js
-application and local verification tools, but no owner setup, working sign-in,
-financial imports, ledger or reporting dashboard yet.
+Steps 1–3 provide the runtime, shared UI, owner setup, authentication and household
+authorization. Financial imports, ledger calculations and reports are the next phases.
+See [installation and authentication](authentication.md) for operational details.
 
 ## Boundaries
 
@@ -13,7 +13,8 @@ financial imports, ledger or reporting dashboard yet.
 | `db/schema/`, `db/migrations/` | Reviewed typed schema and versioned migrations, introduced in Step 3 |
 | `db/queries/` | Database access, scoped operational/reporting queries |
 | `lib/config/` | Server-only configuration, safe diagnostics and fail-closed deployment/schema policy |
-| `lib/auth/` | Server-only authentication primitives; password hashing now, full auth later |
+| `lib/auth/` | Credential validation, password/token primitives and protected request boundaries |
+| `db/auth/` | Atomic identity workflows, scoped authorization and reviewed migration runner |
 | `lib/validation/`, `lib/imports/` | Versioned CSV validation, review/confirmation and provenance |
 | `lib/calculations/` | Decimal accounting, lots, valuations and returns; no UI/workflow dependencies |
 | `lib/reporting/` | Shared metric/release/query contracts |
@@ -23,7 +24,7 @@ financial imports, ledger or reporting dashboard yet.
 ## Configuration and deployment safety
 
 Environment variables are validated without logging their values. Bootstrap secrets
-are optional after setup; future setup must require a valid one before any mutation.
+are optional after setup; setup requires a valid one before any database access or mutation.
 Hosted database connections require `sslmode=verify-full`; do not bypass certificate
 verification. Production origins must use HTTPS. Local Inngest mode is rejected in
 hosted contexts, and all preview/unknown hosted contexts deny database access and jobs.
@@ -31,23 +32,25 @@ hosted contexts, and all preview/unknown hosted contexts deny database access an
 `GET /api/health` is liveness only and does not access services. Explicit readiness
 at `/api/health/ready` returns generic `503 {"status":"not_ready"}` until installation,
 schema, configuration and verified workflows are ready. It never applies migrations.
-Step 1 intentionally cannot report financial readiness. Operator startup diagnostics
+The current phase intentionally cannot report financial readiness. Operator startup diagnostics
 identify missing/invalid variable names; the public HTTP response does not.
 
 The schema compatibility gate accepts version 1 only. Missing, invalid, older or
-newer versions refuse financial writes. Step 3 owns the actual singleton installation
-schema and migration runner. No automatic migrate/push command exists in this scaffold.
+newer versions refuse application operations; an authenticated owner retains limited
+status access if the identity contract remains readable. Setup and local upgrade commands
+apply checksummed migrations under a shared advisory lock. No startup migration runs.
 
 The local Inngest endpoint registers an empty function list. Hosted GET/POST/PUT
 are disabled until signed-handler tests and real workflow authorization exist in Step 6.
 No cron, schedule, keep-alive or background recalculation is deployed.
 
-Use a least-privilege application role and transaction-local membership/RLS context
-when implementing database authorization. The local Compose role is for isolated
-development only; it is not a production role model.
+The runtime login is distinct from the migration administrator. Verified queries use
+transaction-local role, membership and session context with FORCE RLS. Local preparation
+creates a restricted runtime login; the Compose administrator is not used for ordinary
+application operations. Future workers receive separate scoped grants.
 
 See [the authentication compatibility decision](decisions/0001-auth-session-compatibility.md)
-before implementing login. No tracked build/runtime file depends on private planning
+for the adopted session-registry protocol. No tracked build/runtime file depends on private planning
 documents, ignored UI mockups, fonts from those mockups, or design-tool metadata.
 
 ## Dependency choices

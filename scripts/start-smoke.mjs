@@ -10,7 +10,7 @@ if (!["missing", "preview"].includes(mode) || !["3100", "3101"].includes(port)) 
 const env = {
   ...process.env,
   NODE_ENV: "production", VERCEL: "", VERCEL_ENV: "",
-  DATABASE_URL: "", AUTH_SECRET: "", BOOTSTRAP_SECRET: "", APP_URL: "",
+  DATABASE_URL: "", DATABASE_ADMIN_URL: "", LOCAL_RUNTIME: "", AUTH_SECRET: "", BOOTSTRAP_SECRET: "", APP_URL: "",
   INNGEST_EVENT_KEY: "", INNGEST_SIGNING_KEY: "", INNGEST_SIGNING_KEY_FALLBACK: "", INNGEST_DEV: "0",
   TEST_DATABASE_URL: "", LOCAL_UI_PREVIEW: "1",
 };

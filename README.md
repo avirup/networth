@@ -3,20 +3,22 @@
 A private household finance tracker built around reviewed, standardized CSV imports
 and a ₹0 recurring hosting target: Vercel Hobby, Neon Free Postgres and Inngest Hobby.
 
-**Current status: runtime foundation and reusable UI shell.** The app shows a styled
-sign-in placeholder; an opt-in local preview demonstrates the dashboard.
-Owner setup, authentication, imports and financial reports are not enabled yet.
+**Current status: household setup and authentication are implemented.** Create the first
+owner, save recovery codes, sign in and invite household members. Financial imports
+and reports remain unavailable; the optional local preview uses synthetic data.
 No hosted services are provisioned by these commands.
 
 ## Local development
 
-Requirements: Node 22 (see `.nvmrc`), npm 10.9.8 and Docker with Compose.
+Requirements: Node 22 (see `.nvmrc`), npm 10.9.8 and Postgres 16+.
+Docker with Compose is an optional local Postgres convenience.
 
 ```bash
 nvm use
 npm ci
 npm run local:setup
 npm run db:up
+npm run local:auth
 npm run dev
 ```
 
@@ -35,7 +37,10 @@ The local endpoint registers no jobs yet. There is no paid service or production
 required for local development. The Compose database binds only to loopback port 15432
 and keeps data in the `networth-local_postgres-data` volume. `npm run db:stop` stops it
 without deleting that volume. Integration checks use the separate `networth_test`
-database and create/drop only a uniquely named test schema.
+database. Identity checks drop/recreate its `core` schema; keep it disposable.
+
+For first-owner setup, database roles, private invites, upgrades and sole-owner recovery,
+see [installation and authentication](docs/authentication.md).
 
 ## Local UI preview
 
@@ -60,6 +65,7 @@ npm run check
 npm run test:integration
 npx playwright install chromium
 npm run test:e2e
+npm run test:e2e:auth
 node scripts/check-client-secrets.mjs
 ```
 
@@ -68,6 +74,7 @@ Integration tests require the running local database and fail clearly if its con
 is missing; they refuse a remote host or any database other than `networth_test`.
 Browser tests require the preceding production build and launch isolated test servers
 on ports 3100/3101 for missing-configuration and preview cases, on desktop and mobile.
+The separate authenticated suite uses port 3102 and the disposable test database.
 On Linux, Playwright may also require browser OS libraries (`npx playwright install --with-deps chromium`).
 The client-output check scans built static assets for configured local secret values
 without printing those values. Review deployment logs/bundles again before publication.
@@ -80,13 +87,13 @@ deliberately do not satisfy hosted/production readiness requirements.
 
 - Public liveness: `/api/health`; generic financial readiness: `/api/health/ready`.
   Readiness stays 503 until the later installation and workflow steps are implemented.
-- Root redirects to `/login`; `/setup` and `/status` show unavailable states. Financial
-  and auth endpoints are not implemented, and
-  hosted Inngest execution is disabled. No setup or migration runs at startup/build.
+- Root redirects to `/login`; `/setup` requires the bootstrap secret and `/status`
+  requires an active owner. Financial endpoints and hosted Inngest execution remain
+  disabled. No setup or migration runs at startup/build.
 - Previews cannot access the database or run workflows even if they inherit credentials.
 - Credentials plus Auth.js's built-in database strategy are incompatible in the pinned
-  version. The isolated test demonstrates a supported encrypted cookie with a revocable
-  Postgres registry; it is not a production login implementation.
+  version. Authentication uses the tested encrypted cookie with a revocable Postgres
+  registry; all protected operations also check current household membership.
 - Real financial data, exports, secrets, and private implementation notes stay out of Git.
 - Free-provider allowances and deployment configuration must be reverified before hosting.
 
