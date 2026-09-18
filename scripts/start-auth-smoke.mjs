@@ -7,6 +7,7 @@ const url = new URL(raw);
 if (process.env.VERCEL || !["127.0.0.1", "localhost", "[::1]"].includes(url.hostname) || url.pathname !== "/networth_test") throw new Error("Browser auth tests require the disposable local networth_test database.");
 const pool = new pg.Pool({ connectionString: raw });
 try {
+  await pool.query("drop schema if exists ops cascade");
   await pool.query("drop schema if exists core cascade");
   await pool.query("do $$ begin if not exists(select from pg_roles where rolname='networth_test_app') then create role networth_test_app login password 'synthetic-runtime-test-only' noinherit; end if; end $$");
 } finally { await pool.end(); }

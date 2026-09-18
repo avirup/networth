@@ -1,0 +1,12 @@
+{
+  "schemaVersion": "bank-v1",
+  "accountId": "00000000-0000-4000-8000-000000000001",
+  "currency": "INR",
+  "coverageStart": "2026-09-01",
+  "coverageEnd": "2026-09-30",
+  "completeness": "complete",
+  "openingBalance": "1000.00",
+  "closingBalance": "74024.50",
+  "openingKnown": true,
+  "historyReason": ""
+}

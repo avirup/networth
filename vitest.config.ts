@@ -11,7 +11,7 @@ export default defineConfig({
     projects: [
       { resolve: { alias }, test: { name: "unit", environment: "node", include: ["tests/unit/**/*.test.ts"] } },
       { resolve: { alias }, test: {
-        name: "integration", environment: "node", include: ["tests/integration/**/*.test.ts"],
+        name: "integration", fileParallelism: false, environment: "node", include: ["tests/integration/**/*.test.ts"],
         setupFiles: ["./tests/support/integration-env.ts"], testTimeout: 15_000, hookTimeout: 15_000,
       } },
     ],

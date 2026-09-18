@@ -1,0 +1,2 @@
+schema_version,row_id,transaction_ref,transaction_date,description,direction,amount,currency,event_type,category,book_amount_inr,fx_rate,related_row_id
+bank-v1,FX001,DEMO-FX-001,2026-09-01,Synthetic USD interest,credit,100.00,USD,income,interest,8300.00,83.000000000000000000,

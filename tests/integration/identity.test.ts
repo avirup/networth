@@ -1,3 +1,4 @@
+import { financialCases } from "../support/financial-cases";
 import { beforeAll, afterAll, describe, expect, it } from "vitest";
 import { Pool } from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
@@ -24,6 +25,7 @@ let ownerId: string;
 let householdId: string;
 
 beforeAll(async () => {
+  await admin.query("drop schema if exists ops cascade");
   await admin.query("drop schema if exists core cascade");
   await admin.query("do $$ begin if not exists(select from pg_roles where rolname='networth_test_admin') then create role networth_test_admin login password 'synthetic-admin-test-only' nosuperuser nocreatedb createrole noinherit nobypassrls; end if; end $$");
   await admin.query("grant create on database networth_test to networth_test_admin");
@@ -130,10 +132,10 @@ describe.sequential("installation and identity", () => {
     await admin.query("update core.household_membership set role='owner' where user_id=$1", [ownerId]);
   });
   it("keeps authenticated owner status available while incompatible operations fail closed", async () => {
-    await admin.query("update core.system_installation set schema_version=2");
+    await admin.query("update core.system_installation set schema_version=3");
     await expect(service.resolve(reference)).rejects.toMatchObject({ status: 503 });
-    expect((await service.resolveStatus(reference)).schemaVersion).toBe(2);
-    await admin.query("update core.system_installation set schema_version=1");
+    expect((await service.resolveStatus(reference)).schemaVersion).toBe(3);
+    await admin.query("update core.system_installation set schema_version=2");
   });
   it("replays checksummed migrations and rejects modified history", async () => {
     await drizzle(admin).transaction(tx => migrateIdentity(tx, "networth_test_app"));
@@ -169,4 +171,5 @@ describe.sequential("installation and identity", () => {
     await expect(service.login("throttled@example.test", password, "throttle-test")).rejects.toMatchObject({ status: 429 });
   });
 
+  financialCases(admin, service, () => householdId, () => ownerId);
 });

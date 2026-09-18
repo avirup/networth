@@ -1,7 +1,7 @@
 # Runtime foundation
 
-Steps 1–3 provide the runtime, shared UI, owner setup, authentication and household
-authorization. Financial imports, ledger calculations and reports are the next phases.
+Steps 1–4 provide the runtime, shared UI, household access, financial schema and bank
+CSV/posting contracts. Upload review, confirmation workflows and reports are the next phases.
 See [installation and authentication](authentication.md) for operational details.
 
 ## Boundaries
@@ -16,6 +16,7 @@ See [installation and authentication](authentication.md) for operational details
 | `lib/auth/` | Credential validation, password/token primitives and protected request boundaries |
 | `db/auth/` | Atomic identity workflows, scoped authorization and reviewed migration runner |
 | `lib/validation/`, `lib/imports/` | Versioned CSV validation, review/confirmation and provenance |
+| `lib/finance/` | Pure decimal, bank-posting, reconciliation and ownership contracts |
 | `lib/calculations/` | Decimal accounting, lots, valuations and returns; no UI/workflow dependencies |
 | `lib/reporting/` | Shared metric/release/query contracts |
 | `inngest/` | Bounded orchestration; no registered jobs in Step 1 |
@@ -35,7 +36,7 @@ schema, configuration and verified workflows are ready. It never applies migrati
 The current phase intentionally cannot report financial readiness. Operator startup diagnostics
 identify missing/invalid variable names; the public HTTP response does not.
 
-The schema compatibility gate accepts version 1 only. Missing, invalid, older or
+Identity access accepts schema versions 1–2; financial readiness requires version 2. Missing, invalid, older or
 newer versions refuse application operations; an authenticated owner retains limited
 status access if the identity contract remains readable. Setup and local upgrade commands
 apply checksummed migrations under a shared advisory lock. No startup migration runs.
@@ -82,3 +83,5 @@ Technical references:
 
 - [Next.js manual installation](https://nextjs.org/docs/app/getting-started/installation)
 - [Inngest local development](https://www.inngest.com/docs/local-development)
+
+See [bank CSV v1](bank-csv-v1.md) for the Phase 4 accounting contract, categories and upgrade instructions.

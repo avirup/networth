@@ -1,7 +1,8 @@
 import type { EnvironmentReport } from "./environment";
 import { environmentIsValid } from "./environment";
 
-export const SUPPORTED_SCHEMA = { min: 1, max: 1 } as const;
+export const FINANCIAL_SCHEMA = 2;
+export const SUPPORTED_SCHEMA = { min: 1, max: 2 } as const;
 
 export type InstallationState = { schemaVersion: number; setupCompleted: boolean } | null;
 
@@ -25,7 +26,7 @@ export function canServeWorkflows(report: EnvironmentReport) {
 export function financialWriteStatus(report: EnvironmentReport, installation: InstallationState, workflowVerified: boolean) {
   if (report.deployment === "preview") return "preview_disabled";
   if (!environmentIsValid(report)) return "configuration_unavailable";
-  if (!installation || !schemaIsCompatible(installation.schemaVersion)) return "schema_incompatible";
+  if (!installation || installation.schemaVersion !== FINANCIAL_SCHEMA) return "schema_incompatible";
   if (!installation.setupCompleted) return "setup_incomplete";
   if (!canServeWorkflows(report) || !workflowVerified) return "workflow_unavailable";
   return "ready";

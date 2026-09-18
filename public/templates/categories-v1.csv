@@ -1,0 +1,16 @@
+code,name,kind
+grocery,Grocery,expense
+dining,Dining,expense
+entertainment,Entertainment,expense
+transport,Transport,expense
+utilities,Utilities,expense
+healthcare,Healthcare,expense
+housing,Housing,expense
+education,Education,expense
+fees,Fees & charges,expense
+other_expense,Other expense,expense
+salary,Salary,income
+interest,Interest,income
+dividends,Dividends,income
+rental_income,Rental income,income
+other_income,Other income,income

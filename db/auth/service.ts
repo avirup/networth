@@ -109,7 +109,7 @@ export function createIdentityService(options: Options) {
         await tx.insert(credentials).values({ userId: user!.id, passwordHash });
         await tx.insert(memberships).values({ userId: user!.id, householdId: household!.id, role: "owner" });
         const codes = await storeCodes(tx, user!.id);
-        await tx.insert(installation).values({ householdId: household!.id, schemaVersion: 1 });
+        await tx.insert(installation).values({ householdId: household!.id, schemaVersion: 2 });
         await audit(tx, { userId: user!.id, householdId: household!.id }, "setup_completed");
         return { recoveryCodes: codes };
       });

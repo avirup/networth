@@ -15,6 +15,20 @@
       "when": 1789660142324,
       "tag": "0001_security",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789670837800,
+      "tag": "0002_financial_foundation",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1789670839361,
+      "tag": "0003_financial_guards",
+      "breakpoints": true
     }
   ]
 }

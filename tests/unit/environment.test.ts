@@ -33,17 +33,17 @@ describe("runtime configuration and fail-closed policy", () => {
     const report = inspectEnvironment({ ...production, VERCEL_ENV: context });
     expect(canUseDatabase(report)).toBe(false);
     expect(canServeWorkflows(report)).toBe(false);
-    expect(financialWriteStatus(report, { schemaVersion: 1, setupCompleted: true }, true)).toBe("preview_disabled");
+    expect(financialWriteStatus(report, { schemaVersion: 2, setupCompleted: true }, true)).toBe("preview_disabled");
   });
   it("fails closed on an incomplete setup, unknown schema or unverified workflow", () => {
     const report = inspectEnvironment(production);
     expect(financialWriteStatus(report, null, true)).toBe("schema_incompatible");
-    expect(financialWriteStatus(report, { schemaVersion: 2, setupCompleted: true }, true)).toBe("schema_incompatible");
-    expect(financialWriteStatus(report, { schemaVersion: 1, setupCompleted: false }, true)).toBe("setup_incomplete");
-    expect(financialWriteStatus(report, { schemaVersion: 1, setupCompleted: true }, false)).toBe("workflow_unavailable");
-    expect(financialWriteStatus(report, { schemaVersion: 1, setupCompleted: true }, true)).toBe("ready");
+    expect(financialWriteStatus(report, { schemaVersion: 3, setupCompleted: true }, true)).toBe("schema_incompatible");
+    expect(financialWriteStatus(report, { schemaVersion: 2, setupCompleted: false }, true)).toBe("setup_incomplete");
+    expect(financialWriteStatus(report, { schemaVersion: 2, setupCompleted: true }, false)).toBe("workflow_unavailable");
+    expect(financialWriteStatus(report, { schemaVersion: 2, setupCompleted: true }, true)).toBe("ready");
   });
-  it.each([null, 0, 2, 1.5, NaN, Infinity])("rejects unsupported schema %s", (version) => {
+  it.each([null, 0, 3, 1.5, NaN, Infinity])("rejects unsupported schema %s", (version) => {
     expect(schemaIsCompatible(version)).toBe(false);
   });
   it("logs only approved event metadata, including when runtime objects contain extra fields", () => {

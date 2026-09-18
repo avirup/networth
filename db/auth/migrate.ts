@@ -5,7 +5,7 @@ import { createHash } from "node:crypto";
 import { sql } from "drizzle-orm";
 import type { Transaction } from "./connection";
 
-export const MIGRATIONS = ["0000_identity", "0001_security"] as const;
+export const MIGRATIONS = ["0000_identity", "0001_security", "0002_financial_foundation", "0003_financial_guards"] as const;
 export async function migrationLock(tx: Transaction) { await tx.execute(sql`select pg_advisory_xact_lock(716284913)`); }
 export async function migrateIdentity(tx: Transaction, runtimeRole: string) {
   await migrationLock(tx);

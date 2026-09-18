@@ -1,0 +1,6 @@
+schema_version,row_id,transaction_ref,transaction_date,description,direction,amount,currency,event_type,category,book_amount_inr,fx_rate,related_row_id
+bank-v1,R001,DEMO-001,2026-09-01,Synthetic salary,credit,85000.00,INR,income,salary,,,
+bank-v1,R002,DEMO-002,2026-09-02,Synthetic grocery purchase,debit,2450.50,INR,expense,grocery,,,
+bank-v1,R003,,2026-09-03,Synthetic transfer to own savings,debit,10000.00,INR,transfer,,,,
+bank-v1,R004,DEMO-004,2026-09-04,Synthetic grocery refund,credit,500.00,INR,expense_refund,grocery,,,R002
+bank-v1,R005,DEMO-005,2026-09-05,Synthetic service fee,debit,25.00,INR,expense,fees,,,

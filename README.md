@@ -3,8 +3,8 @@
 A private household finance tracker built around reviewed, standardized CSV imports
 and a ₹0 recurring hosting target: Vercel Hobby, Neon Free Postgres and Inngest Hobby.
 
-**Current status: household setup and authentication are implemented.** Create the first
-owner, save recovery codes, sign in and invite household members. Financial imports
+**Current status: household access and the bank financial foundation are implemented.** Create the first
+owner, save recovery codes, sign in and invite household members. The financial schema, defined categories and bank CSV v1 contract are ready. Upload review
 and reports remain unavailable; the optional local preview uses synthetic data.
 No hosted services are provisioned by these commands.
 
@@ -41,6 +41,9 @@ database. Identity checks drop/recreate its `core` schema; keep it disposable.
 
 For first-owner setup, database roles, private invites, upgrades and sole-owner recovery,
 see [installation and authentication](docs/authentication.md).
+
+See [bank CSV v1 and Phase 4 migration](docs/bank-csv-v1.md) for templates, category codes,
+accounting rules and the upgrade command for your existing installation.
 
 ## Local UI preview
 
