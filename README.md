@@ -66,6 +66,77 @@ durable recalculation. Each service currently offers a free plan, but allowances
 terms can change. Review the current limits before enabling imports. The project never
 upgrades a plan or purchases capacity automatically.
 
+### Guided setup (recommended)
+
+The guided installer keeps the separate runtime, worker, and administrator database
+identities while hiding their SQL and password generation from the normal setup path.
+You need Node.js 22, a Neon database, a Vercel project, and an Inngest account.
+
+1. Fork this repository, clone your fork, and install the locked dependencies:
+
+   ```bash
+   git clone https://github.com/YOUR_GITHUB_USER/networth.git
+   cd networth
+   nvm install
+   nvm use
+   npm ci
+   ```
+
+2. Choose the Vercel project name so you know its production URL. In Neon, create a
+   project and copy its database-owner **direct** connection URL, then run:
+
+   ```bash
+   npm run deploy:prepare
+   ```
+
+   Enter the Neon URL at the hidden prompt and the final Vercel production URL when
+   requested. The command enforces `sslmode=verify-full`, creates two restricted logins,
+   generates independent secrets, applies the reviewed schema, grants the worker role,
+   and writes `.env.deploy.local`. It never prints a credential and will not overwrite
+   an existing private configuration. If you are intentionally recovering a failed
+   earlier setup whose database roles already exist, use
+   `npm run deploy:prepare -- --rotate`. If Vercel later assigns a different domain,
+   update `APP_URL` in the private file and in Vercel before opening `/setup`.
+
+3. Import your fork into Vercel. Add the non-empty values from `.env.deploy.local` to
+   the **Production** environment and deploy. Leave the three blank Inngest values out;
+   the integration adds them later. Do not add these values to Preview.
+
+4. Open `https://YOUR_APP/setup`, enter the generated `BOOTSTRAP_SECRET`, and create the
+   first owner. Save all eight recovery codes.
+
+5. Connect the project through Inngest's official Vercel integration and redeploy. Then
+   inspect the Neon, Vercel, and Inngest usage dashboards. When every account is below
+   the 80% threshold, enable a conservative 24-hour import allowance:
+
+   ```bash
+   npm run deploy:enable -- personal
+   ```
+
+   `personal` allows 10 imports and 500 bounded calculation attempts. Use `regular` for
+   up to 30 imports and 1,500 attempts after confirming that the larger allowance fits
+   the provider capacity you actually observed. Neither preset purchases capacity or
+   renews itself.
+
+6. Check the completed installation:
+
+   ```bash
+   npm run deploy:check
+   ```
+
+   The checker verifies the live app and Inngest endpoint, migration records, first-owner
+   setup, database-role separation, and the current capacity lease without printing
+   secrets.
+
+7. Remove `DATABASE_ADMIN_URL` and `BOOTSTRAP_SECRET` from Vercel Production and redeploy.
+   Keep `.env.deploy.local` only on the trusted administration computer for upgrades,
+   recovery, and future capacity reviews.
+
+The remaining section documents every underlying step for operators who need custom role
+names, custom capacity budgets, or manual recovery.
+
+### Manual setup (advanced)
+
 You need:
 
 - a GitHub account and your own fork or copy of this repository;

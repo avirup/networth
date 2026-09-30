@@ -30,6 +30,16 @@ no full-history polling or periodic recalculation.
 
 ## Configuration
 
+New installations can use `npm run deploy:prepare` to create the restricted runtime and
+worker roles and apply their grants. After owner setup and Inngest connection, a simple
+operator can review provider dashboards and choose `npm run deploy:enable -- personal`
+or `regular`. Both are fixed 24-hour ceilings and still require explicit confirmation
+that all shared provider usage is below 80%. `npm run deploy:check` verifies the public
+endpoints, role separation, schema and current lease. The commands read the private,
+Git-ignored `.env.deploy.local` created by the guided installer.
+
+The lower-level procedure is:
+
 1. Apply reviewed migrations with `npm run db:migrate` (current schema 10).
 2. Create a separate least-privilege Postgres login and set private
    `DATABASE_WORKER_URL`. Hosted connections require `sslmode=verify-full`.

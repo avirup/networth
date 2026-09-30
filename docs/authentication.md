@@ -74,6 +74,20 @@ installer's actual runtime; local tests do not establish hosted readiness or cap
 
 ## Manual hosted configuration
 
+For a new installation, the recommended path is the repository-root guided command:
+
+```sh
+npm run deploy:prepare
+```
+
+It prompts privately for the direct Neon owner URL and exact production origin, creates
+the restricted `networth_app` and `networth_jobs` logins, generates independent secrets,
+applies the reviewed schema, prepares the worker, and writes the Git-ignored
+`.env.deploy.local`. It does not contact Vercel, create an owner, enable imports, overwrite
+an existing private configuration, or print credentials. Add the generated values to
+Vercel Production, complete `/setup`, connect Inngest, and follow the guided README steps.
+The manual procedure below remains the recovery and custom-installation reference.
+
 Import your own copy of this repository into your personal Vercel project and provision
 your own Neon database. Configure the two connections above with `sslmode=verify-full`,
 independent random `AUTH_SECRET` and `BOOTSTRAP_SECRET` values of at least 32 characters,
