@@ -1,7 +1,7 @@
 # Persisted bank calculation candidates
 
 Migration `0008_bank_candidates` adds fixed-date candidate progress and compact numeric
-account/category contributions. Migration `0010` publishes completed generations through schema 9 release manifests. Candidate rows remain private calculation state.
+account/category contributions. Migration `0010` publishes completed generations through release manifests; schema 10 adds live reporting over those immutable manifests. Candidate rows remain private calculation state.
 
 ## Durable worker flow
 

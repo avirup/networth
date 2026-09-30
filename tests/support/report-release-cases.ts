@@ -7,7 +7,7 @@ import { beginCalculationPlan, advanceCalculationPlan, type CalculationPlan } fr
 import { beginBankCandidate, advanceBankCandidate, type BankCandidate } from "@/db/calculations/bank-worker";
 import { advanceBalanceCandidate, type BalanceCandidate } from "@/db/calculations/bank-balance-worker";
 import { cleanupDerivedReports, publishBankRelease } from "@/db/calculations/publish";
-import { readBankOverview } from "@/db/reports/service";
+import { readBankActivity, readBankOverview, reportCacheKey } from "@/db/reports/service";
 
 export function reportReleaseCases(admin: Pool, service: IdentityService, household: () => string, session: () => string, completedRun: () => string) {
   const url = new URL(process.env.TEST_DATABASE_URL!); url.username = "networth_test_worker"; url.password = "synthetic-worker-test-only";
@@ -84,11 +84,35 @@ export function reportReleaseCases(admin: Pool, service: IdentityService, househ
 
   it("pins one authorized release and serves exact report strings", async () => {
     const report = await service.scoped(session(), household(), "read", (tx, actor) => readBankOverview(tx, actor, "2026-09"));
-    expect(report?.release.id).toBe(releaseId);
-    expect(report?.summary.netWorthInr).toMatch(/^-?\d+(\.\d+)?$/);
-    expect(report?.summary.monthlyIncomeInr).toMatch(/^-?\d+(\.\d+)?$/);
-    expect(report?.accounts.length).toBeGreaterThan(0);
+    expect(report).not.toBeNull();
+    if (!report) throw new Error("Expected a published bank report.");
+    expect(report.release.id).toBe(releaseId);
+    expect(report.summary.netWorthInr).toMatch(/^-?\d+(\.\d+)?$/);
+    expect(report.summary.monthlyIncomeInr).toMatch(/^-?\d+(\.\d+)?$/);
+    expect(report.accounts.length).toBeGreaterThan(0);
+    expect(report.scope).toMatchObject({ kind: "household", id: household(), asOf: report.release.asOf });
+    expect(report.trends).toHaveLength(12);
+    expect(report.cashFlow.netCashMovementInr).toMatch(/^-?\d+(\.\d+)?$/);
+    expect(report.cashFlow.investmentAllocationInr).toBeNull();
+    expect(report.quality.status).toMatch(/^(complete|incomplete|stale|paused)$/);
     expect((await admin.query("select count(*)::int n from ops.report_request_pin where release_id=$1 and expires_at>now()", [releaseId])).rows[0].n).toBeGreaterThan(0);
+  });
+
+  it("paginates event-level source drilldown and reloads an expired release", async () => {
+    const first = await service.scoped(session(), household(), "read", (tx, actor) => readBankActivity(tx, actor, { month: "2026-09", releaseId, limit: 1 }));
+    expect(first?.releaseId).toBe(releaseId);
+    expect(first?.items).toHaveLength(1);
+    expect(first?.items[0]).toMatchObject({ import: { revision: expect.any(Number) }, sources: expect.any(Array) });
+    expect(first?.items[0]?.amountInr).toMatch(/^-?\d+(\.\d+)?$/);
+    if (first?.nextCursor) {
+      const second = await service.scoped(session(), household(), "read", (tx, actor) => readBankActivity(tx, actor, { month: "2026-09", releaseId, cursor: first.nextCursor, limit: 1 }));
+      expect(second?.items[0]?.id).not.toBe(first.items[0]?.id);
+    }
+    const missing = "00000000-0000-4000-8000-000000000099";
+    const fallback = await service.scoped(session(), household(), "read", (tx, actor) => readBankOverview(tx, actor, "2026-09", missing));
+    expect(fallback?.release).toMatchObject({ id: releaseId, reloadedCurrent: true });
+    expect(reportCacheKey({ householdId: household(), scope: "household", releaseId, asOf: fallback!.release.asOf, month: "2026-09", resource: "activity", limit: 25 }))
+      .not.toBe(reportCacheKey({ householdId: household(), scope: "household", releaseId, asOf: fallback!.release.asOf, month: "2026-08", resource: "activity", limit: 25 }));
   });
 
   it("retains pinned previous data and cleans only safe expired generations", async () => {

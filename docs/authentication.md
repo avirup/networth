@@ -2,7 +2,7 @@
 
 Phase 3 implements closed registration, owner bootstrap, invitations, recovery,
 revocable sessions, household permissions and Postgres isolation. Financial uploads,
-bank report reads and signed Inngest jobs require schema 9 plus a reviewed capacity lease.
+bank report reads and signed Inngest jobs require schema 10 plus a reviewed capacity lease.
 
 ## Local installation
 

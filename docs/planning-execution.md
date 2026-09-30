@@ -3,7 +3,7 @@
 Phase 6 planning pages now reserve usage before work. Migration
 `0007_planning_execution` adds an installation-wide verifier-owned execution lease and
 household-scoped calculation budgets. Existing candidates receive a budget atomically;
-new candidates get one in their creation transaction. Migrations `0008`–`0010` extend this shared budget through bank movements, balances and publication; current schema is 9.
+new candidates get one in their creation transaction. Migrations `0008`–`0010` extend this shared budget through bank movements, balances and publication; schema 10 adds read-only live reports without changing that budget.
 
 ## Attempt lifecycle
 

@@ -30,7 +30,7 @@ no full-history polling or periodic recalculation.
 
 ## Configuration
 
-1. Apply reviewed migrations with `npm run db:migrate` (current schema 9).
+1. Apply reviewed migrations with `npm run db:migrate` (current schema 10).
 2. Create a separate least-privilege Postgres login and set private
    `DATABASE_WORKER_URL`. Hosted connections require `sslmode=verify-full`.
 3. Run `npm run workflows:prepare` locally with the admin connection.

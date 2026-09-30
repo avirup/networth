@@ -99,7 +99,7 @@ payloads. A stale run is superseded and cannot replace a newer revision.
 
 Release manifests select changed candidate generations and reuse unchanged accounts. The
 current pointer changes only after a complete manifest validates. Authenticated report reads
-pin one release for 15 minutes and return decimal strings from `reporting.bank_overview`.
+pin one release for 15 minutes and return decimal strings from the bounded Phase 7 dashboard and activity reports.
 Only reconciled INR bank/cash checkpoints enter known net worth; missing or foreign values
 stay explicit. See [report publication](report-publication.md).
 
@@ -108,6 +108,6 @@ unreferenced derived state. Provider headroom remains a manual operational fact:
 administrator reviews every shared free-tier meter and records a short bounded lease with
 `npm run workflows:verify`. Expiry pauses imports/calculation and preserves the last release.
 
-Phase 7 extends the live bank dashboard with drilldowns, trends and cash-flow views. Cards,
+Phase 7 extends the live bank dashboard with release-pinned drilldowns, trends and reconciled cash-flow views. Cards,
 investments, ownership allocation, dated FX and performance remain unavailable until their
 product-specific phases.

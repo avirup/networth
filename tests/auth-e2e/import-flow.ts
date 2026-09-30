@@ -83,11 +83,31 @@ export async function importFlow(page: Page, info: TestInfo) {
     await expect(page.getByText("Synthetic browser bank")).toBeVisible();
     await expect(page.getByText("Entertainment", { exact: true })).toBeVisible();
     await expect(page.getByText("Incomplete data", { exact: true })).toBeVisible();
+    const sourceDisclosure = page.locator(".activity-list details").first();
+    await sourceDisclosure.locator("summary").click();
+    await expect(sourceDisclosure.getByText("Import revision", { exact: true })).toBeVisible();
+    await expect(sourceDisclosure.getByText("Source row 1", { exact: true })).toBeVisible();
+    await sourceDisclosure.locator("summary").click();
+    await page.getByRole("button", { name: "Select reporting month, September 2026" }).click();
+    await page.getByRole("button", { name: "Aug", exact: true }).click();
+    await expect(page.getByText("No category activity", { exact: true })).toBeVisible();
+    await expect(page.getByText("No activity this month", { exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Select reporting month, August 2026" }).click();
+    await page.getByRole("button", { name: "Sep", exact: true }).click();
+    await expect(page.getByText("Entertainment", { exact: true })).toBeVisible();
     await page.screenshot({ path: info.outputPath("published-report-desktop.png"), fullPage: true });
     await page.setViewportSize({ width: 390, height: 844 });
     await page.screenshot({ path: info.outputPath("published-report-mobile.png"), fullPage: true });
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    const reportDimensions = await page.evaluate(() => ({ width: innerWidth, scrollWidth: document.documentElement.scrollWidth,
+      overflow: Array.from(document.querySelectorAll("body *")).map(element => { const box = element.getBoundingClientRect(); return { tag: element.tagName, cls: element.className, left: box.left, right: box.right, width: box.width, ownScroll: element.scrollWidth, ownClient: element.clientWidth }; })
+        .filter(element => element.right > innerWidth + 1 || element.left < -1).slice(0, 20) }));
+    expect(reportDimensions.scrollWidth, JSON.stringify(reportDimensions)).toBeLessThanOrEqual(reportDimensions.width);
     await page.setViewportSize({ width: 1440, height: 1000 });
+    await page.getByRole("link", { name: "Open activity" }).click();
+    await expect(page.getByRole("heading", { name: "Activity", exact: true })).toBeVisible();
+    await expect(page.getByText("Synthetic cinema", { exact: true })).toBeVisible();
+    await page.locator(".activity-list details summary").first().click();
+    await expect(page.getByText("Import revision", { exact: true })).toBeVisible();
     const oversized = await page.request.post("/api/imports/confirm", { headers: { origin: "http://127.0.0.1:3102" }, data: { padding: "₹".repeat(1_000_001) } });
     expect(oversized.status()).toBe(413);
     const bad = await page.request.post("/api/imports/review", { headers: { origin: "http://127.0.0.1:3102" }, data: {} });

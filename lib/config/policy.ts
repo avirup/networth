@@ -1,8 +1,8 @@
 import type { EnvironmentReport } from "./environment";
 import { environmentIsValid } from "./environment";
 
-export const FINANCIAL_SCHEMA = 9;
-export const SUPPORTED_SCHEMA = { min: 1, max: 9 } as const;
+export const FINANCIAL_SCHEMA = 10;
+export const SUPPORTED_SCHEMA = { min: 1, max: 10 } as const;
 
 export type InstallationState = { schemaVersion: number; setupCompleted: boolean } | null;
 

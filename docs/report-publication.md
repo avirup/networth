@@ -11,8 +11,8 @@ the complete manifest, changes the former current release to `previous`, and swi
 `ops.current_report_release` in the same transaction. A stale run becomes `superseded` and
 cannot replace newer evidence. Confirmed ledger history is never changed or deleted.
 
-Authenticated overview requests call `ops.pin_current_report` and then
-`reporting.bank_overview` in the same membership-scoped transaction. The DTO contains one
+Phase 7 authenticated report requests call `ops.pin_report_context` and then the bounded
+`reporting.bank_dashboard` or `reporting.bank_activity` function in the same membership-scoped transaction. The DTO contains one
 release ID, source revision and as-of date; exact money values remain decimal strings.
 Known net worth includes only reconciled INR bank/cash checkpoints. Foreign currency and
 incomplete accounts increase the explicit unknown count instead of using transaction-time
@@ -42,7 +42,7 @@ npm run workflows:verify -- 10 500 150000000 60 "Checked Neon, Vercel and Innges
 The positional values are remaining imports, remaining calculation attempts, remaining
 storage bytes, lease minutes, and an audit reason. The command is local-administrator only,
 requires the signed workflow configuration and restricted worker connection, validates schema
-9 and the 400 MB database ceiling, and atomically renews import/execution leases. It does not
+10 and the 400 MB database ceiling, and atomically renews import/execution leases. It does not
 query providers, buy capacity or infer headroom. Re-run it only after another manual provider
 review; expiry or exhausted counters pauses work while preserving the last published release.
 

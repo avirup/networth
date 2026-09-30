@@ -25,7 +25,7 @@ values. The loading example deliberately remains until another state is selected
 
 `/login` supports authentication and `/setup` bootstraps the first owner; subsequent
 household access requires an invitation. `/dashboard` requires active household
-membership, and `/status` requires owner authorization. Owners and editors can review bank imports; viewers can read batch status. The live overview reads one authenticated schema 9 release and follows the global month selector. Synthetic preview reports never stand in for real reports.
+membership, and `/status` requires owner authorization. Owners and editors can review bank imports; viewers can read batch status. The live Overview, Accounts and Activity screens read one authenticated schema 10 release and follow the global month selector. Synthetic preview reports never stand in for real reports. See [live bank reports](live-bank-reports.md).
 
 ## Shared components
 

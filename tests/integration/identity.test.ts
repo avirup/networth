@@ -140,10 +140,10 @@ describe.sequential("installation and identity", () => {
     await admin.query("update core.household_membership set role='owner' where user_id=$1", [ownerId]);
   });
   it("keeps authenticated owner status available while incompatible operations fail closed", async () => {
-    await admin.query("update core.system_installation set schema_version=10");
+    await admin.query("update core.system_installation set schema_version=11");
     await expect(service.resolve(reference)).rejects.toMatchObject({ status: 503 });
-    expect((await service.resolveStatus(reference)).schemaVersion).toBe(10);
-    await admin.query("update core.system_installation set schema_version=9");
+    expect((await service.resolveStatus(reference)).schemaVersion).toBe(11);
+    await admin.query("update core.system_installation set schema_version=10");
   });
   it("replays checksummed migrations and rejects modified history", async () => {
     await drizzle(admin).transaction(tx => migrateIdentity(tx, "networth_test_app"));

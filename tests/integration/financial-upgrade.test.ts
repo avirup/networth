@@ -29,7 +29,7 @@ it("upgrades a populated v1 identity database without changing users or sessions
   }catch(error){await client.query("rollback");throw error;}finally{client.release();}
   await drizzle(pool).transaction(tx=>migrateIdentity(tx,'networth_test_app'));
   await drizzle(pool).transaction(tx=>migrateIdentity(tx,'networth_test_app'));
-  expect((await pool.query("select schema_version from core.system_installation")).rows[0].schema_version).toBe(9);
+  expect((await pool.query("select schema_version from core.system_installation")).rows[0].schema_version).toBe(10);
   expect((await pool.query("select password_hash from core.auth_credential where user_id=$1",[userId!])).rows[0].password_hash).toBe('synthetic-preservation-marker');
   expect((await pool.query("select user_id,revoked_at from core.auth_session")).rows).toEqual([{user_id:userId!,revoked_at:null}]);
   expect((await pool.query("select count(*)::int n from core.dim_category where household_id=$1",[householdId!])).rows[0].n).toBe(15);

@@ -2,7 +2,7 @@
 
 `lib/finance/bank-balance.ts` implements the pure `bank-balance-v1` rule for one
 bank/cash account, native currency, captured revision and inclusive date window.
-A restricted worker persists private checkpoints; schema 9 release manifests publish only reconciled reportable values and retain incomplete values with reasons.
+A restricted worker persists private checkpoints; schema 10 release manifests publish only reconciled reportable values and retain incomplete values with reasons.
 
 The rule accepts at most 1,000 daily movement grains, coverage declarations and
 closing observations in each collection. The caller must assemble **all** evidence
