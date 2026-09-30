@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgSchema, uuid, text, timestamp, integer, numeric, date, jsonb, boolean, unique, check, foreignKey, index } from "drizzle-orm/pg-core";
+import { pgSchema, uuid, text, timestamp, integer, bigint, numeric, date, jsonb, boolean, unique, check, foreignKey, index, primaryKey } from "drizzle-orm/pg-core";
 import { core, households } from "./index";
 export const ops = pgSchema("ops");
 const instant = (name: string) => timestamp(name, { withTimezone: true, mode: "date" });
@@ -199,5 +199,145 @@ unique("rebuild_request_scope").on(t.householdId, t.id),
 foreignKey({ columns: [t.householdId, t.batchId], foreignColumns: [batches.householdId, batches.id] }),
 foreignKey({ columns: [t.householdId, t.accountId], foreignColumns: [accounts.householdId, accounts.id] }),
 check("rebuild_request_0", sql`${t.revision}>0`),
-unique("rebuild_batch_account").on(t.householdId,t.batchId,t.accountId)
+unique("rebuild_batch_account").on(t.householdId,t.batchId,t.accountId),
+index("rebuild_planning_cursor").on(t.householdId,t.revision,t.id)
 ]);
+// Global verifier-owned lease: member sessions may read, but cannot grant capacity.
+export const importAdmission = ops.table("import_admission", {
+  singleton: boolean().primaryKey().default(true), verifiedUntil: instant("verified_until").notNull(),
+  workflowVerified: boolean("workflow_verified").notNull().default(false),
+  remainingImports: integer("remaining_imports").notNull(), remainingStorageBytes: bigint("remaining_storage_bytes", { mode: "bigint" }).notNull(), reason: text().notNull(),
+}, t => [check("import_admission_singleton_check", sql`${t.singleton}`), check("import_admission_remaining_imports_check", sql`${t.remainingImports}>=0`), check("import_admission_remaining_storage_bytes_check", sql`${t.remainingStorageBytes}>=0`), check("import_admission_reason_check", sql`length(${t.reason}) between 1 and 500`)]);
+export const workflowDelivery = ops.table("workflow_delivery", {
+  outboxId: uuid("outbox_id").primaryKey(), householdId: uuid("household_id").notNull(),
+  state: text().notNull().default("pending"), attempts: integer().notNull().default(0), totalAttempts: integer("total_attempts").notNull().default(0),
+  leaseToken: uuid("lease_token"), leaseUntil: instant("lease_until"), nextAttemptAt: instant("next_attempt_at").notNull().defaultNow(),
+  sentAt: instant("sent_at"), receivedAt: instant("received_at"), lastError: text("last_error"),
+}, t => [foreignKey({ columns: [t.householdId,t.outboxId], foreignColumns: [outbox.householdId,outbox.id] }),
+  check("workflow_delivery_state_check", sql`${t.state} in ('pending','sending','sent','received','paused')`),
+  check("workflow_delivery_attempts_check", sql`${t.attempts} between 0 and 3`),
+  check("workflow_delivery_total_attempts_check", sql`${t.totalAttempts}>=${t.attempts}`),
+  check("workflow_delivery_last_error_check", sql`${t.lastError} in ('send_failed','attempt_limit')`),
+  check("workflow_delivery_check", sql`(${t.leaseToken} is null)=(${t.leaseUntil} is null)`),
+  index("workflow_delivery_pending").on(t.nextAttemptAt,t.outboxId).where(sql`${t.state} in ('pending','sending')`),
+]);
+
+export const calculationRuns = ops.table("calculation_run", {
+  ...base(), sourceRevision: integer("source_revision").notNull(), ruleVersion: text("rule_version").notNull(),
+  state: text().notNull().default("planning"), page: integer().notNull().default(0),
+  cursorRevision: integer("cursor_revision").notNull().default(0),
+  cursorId: uuid("cursor_id").notNull().default("00000000-0000-0000-0000-000000000000"),
+  createdAt: instant("created_at").notNull().defaultNow(), updatedAt: instant("updated_at").notNull().defaultNow(),
+}, t => [unique("calculation_run_scope").on(t.householdId,t.id), unique("calculation_run_household").on(t.householdId),
+  check("calculation_run_source_revision_check", sql`${t.sourceRevision}>0`),
+  check("calculation_run_rule_version_check", sql`${t.ruleVersion}='bank-plan-v1'`),
+  check("calculation_run_state_check", sql`${t.state} in ('planning','prepared','superseded')`),
+  check("calculation_run_page_check", sql`${t.page}>=0`),
+  check("calculation_run_cursor_revision_check", sql`${t.cursorRevision}>=0 and ${t.cursorRevision}<=${t.sourceRevision}`),
+]);
+export const calculationAccounts = ops.table("calculation_account", {
+  householdId: uuid("household_id").notNull(), runId: uuid("run_id").notNull(),
+  accountId: uuid("account_id").notNull(), earliestDate: date("earliest_date").notNull(),
+}, t => [primaryKey({ columns: [t.runId,t.accountId] }),
+  foreignKey({ columns: [t.householdId,t.runId], foreignColumns: [calculationRuns.householdId,calculationRuns.id] }),
+  foreignKey({ columns: [t.householdId,t.accountId], foreignColumns: [accounts.householdId,accounts.id] }),
+]);
+
+export const executionCapacity = ops.table("execution_capacity", {
+  singleton: boolean().primaryKey().default(true), verifiedUntil: instant("verified_until").notNull(),
+  remainingAttempts: bigint("remaining_attempts", { mode: "bigint" }).notNull(),
+  remainingStorageBytes: bigint("remaining_storage_bytes", { mode: "bigint" }).notNull(),
+}, t => [check("execution_capacity_singleton_check", sql`${t.singleton}`),
+  check("execution_capacity_remaining_attempts_check", sql`${t.remainingAttempts}>=0`),
+  check("execution_capacity_remaining_storage_bytes_check", sql`${t.remainingStorageBytes}>=0`),
+]);
+export const calculationBudgets = ops.table("calculation_budget", {
+  runId: uuid("run_id").primaryKey(), householdId: uuid("household_id").notNull(),
+  windowNumber: integer("window_number").notNull().default(1), windowAttempts: integer("window_attempts").notNull().default(0),
+  totalAttempts: bigint("total_attempts", { mode: "bigint" }).notNull().default(sql`0`),
+  stepPage: integer("step_page").notNull().default(0), stepAttempts: integer("step_attempts").notNull().default(0),
+  state: text().notNull().default("ready"), reason: text(), leaseToken: uuid("lease_token"), leaseUntil: instant("lease_until"),
+}, t => [foreignKey({ columns: [t.householdId,t.runId], foreignColumns: [calculationRuns.householdId,calculationRuns.id] }),
+  check("calculation_budget_window_number_check", sql`${t.windowNumber}>0`),
+  check("calculation_budget_window_attempts_check", sql`${t.windowAttempts} between 0 and 100`),
+  check("calculation_budget_total_attempts_check", sql`${t.totalAttempts}>=${t.windowAttempts}`),
+  check("calculation_budget_step_page_check", sql`${t.stepPage}>=0`),
+  check("calculation_budget_step_attempts_check", sql`${t.stepAttempts} between 0 and 4`),
+  check("calculation_budget_state_check", sql`${t.state} in ('ready','paused')`),
+  check("calculation_budget_reason_check", sql`${t.reason} in ('capacity','retry_limit','window_limit')`),
+  check("calculation_budget_lease_check", sql`(${t.leaseToken} is null)=(${t.leaseUntil} is null)`),
+  check("calculation_budget_pause_check", sql`(${t.state}='paused')=(${t.reason} is not null)`),
+]);
+
+export const reporting = pgSchema("reporting");
+export const bankCandidates = ops.table("bank_candidate", {
+  runId: uuid("run_id").primaryKey(), householdId: uuid("household_id").notNull(), generationId: uuid("generation_id").notNull().defaultRandom(),
+  asOf: date("as_of").notNull(), ruleVersion: text("rule_version").notNull().default("bank-movements-v1"), state: text().notNull().default("building"),
+  page: integer().notNull().default(0), cursorDate: date("cursor_date"), cursorId: uuid("cursor_id"), eventCount: integer("event_count").notNull().default(0),
+}, t => [foreignKey({ columns: [t.householdId,t.runId], foreignColumns: [calculationRuns.householdId,calculationRuns.id] }),
+  unique("bank_candidate_generation").on(t.householdId,t.runId,t.generationId),
+  check("bank_candidate_as_of_check", sql`${t.asOf} between '1900-01-01' and '9999-12-31'`),
+  check("bank_candidate_rule_version_check", sql`${t.ruleVersion}='bank-movements-v1'`),
+  check("bank_candidate_state_check", sql`${t.state} in ('building','calculated')`),
+  check("bank_candidate_page_check", sql`${t.page}>=0`), check("bank_candidate_event_count_check", sql`${t.eventCount}>=0`),
+  check("bank_candidate_cursor_check", sql`(${t.cursorDate} is null)=(${t.cursorId} is null)`),
+]);
+export const bankAccountMovements = reporting.table("bank_account_movement", {
+  householdId: uuid("household_id").notNull(), runId: uuid("run_id").notNull(), generationId: uuid("generation_id").notNull(),
+  accountId: uuid("account_id").notNull(), currency: text().notNull().references(() => currencies.code), ledgerKind: text("ledger_kind").notNull(), effectiveDate: date("effective_date").notNull(),
+  nativeDelta: numeric("native_delta").notNull(), bookDeltaInr: numeric("book_delta_inr").notNull(), cashDelta: numeric("cash_delta").notNull(),
+  openingDelta: numeric("opening_delta").notNull(), unresolvedDelta: numeric("unresolved_delta").notNull(), postingCount: bigint("posting_count", { mode: "bigint" }).notNull(), incompleteEvidence: boolean("incomplete_evidence").notNull(),
+}, t => [primaryKey({ columns: [t.runId,t.accountId,t.currency,t.ledgerKind,t.effectiveDate] }),
+  foreignKey({ columns: [t.householdId,t.runId,t.generationId], foreignColumns: [bankCandidates.householdId,bankCandidates.runId,bankCandidates.generationId] }),
+  foreignKey({ columns: [t.householdId,t.accountId], foreignColumns: [accounts.householdId,accounts.id] }),
+  check("bank_account_movement_ledger_kind_check", sql`${t.ledgerKind} in ('asset','liability')`), check("bank_account_movement_posting_count_check", sql`${t.postingCount}>0`),
+]);
+export const bankCategoryMovements = reporting.table("bank_category_movement", {
+  id: uuid().defaultRandom().primaryKey(), householdId: uuid("household_id").notNull(), runId: uuid("run_id").notNull(), generationId: uuid("generation_id").notNull(),
+  accountId: uuid("account_id").notNull(), month: date().notNull(), kind: text().notNull(), categoryId: uuid("category_id"),
+  amountInr: numeric("amount_inr").notNull(), postingCount: bigint("posting_count", { mode: "bigint" }).notNull(),
+}, t => [unique("bank_category_grain").on(t.runId,t.accountId,t.month,t.kind,t.categoryId).nullsNotDistinct(),
+  foreignKey({ columns: [t.householdId,t.runId,t.generationId], foreignColumns: [bankCandidates.householdId,bankCandidates.runId,bankCandidates.generationId] }),
+  foreignKey({ columns: [t.householdId,t.accountId], foreignColumns: [accounts.householdId,accounts.id] }),
+  foreignKey({ columns: [t.householdId,t.categoryId], foreignColumns: [categories.householdId,categories.id] }),
+  check("bank_category_movement_month_check", sql`extract(day from ${t.month})=1`), check("bank_category_movement_kind_check", sql`${t.kind} in ('income','expense')`),
+  check("bank_category_movement_posting_count_check", sql`${t.postingCount}>0`),
+]);
+
+export const bankBalanceCandidates = ops.table("bank_balance_candidate", {
+  runId: uuid("run_id").primaryKey(), householdId: uuid("household_id").notNull(), generationId: uuid("generation_id").notNull(),
+  state: text().notNull().default("building"), page: integer().notNull().default(0), cursorAccountId: uuid("cursor_account_id"),
+}, t => [foreignKey({ columns: [t.householdId,t.runId,t.generationId], foreignColumns: [bankCandidates.householdId,bankCandidates.runId,bankCandidates.generationId] }),
+  check("bank_balance_candidate_state_check", sql`${t.state} in ('building','calculated')`), check("bank_balance_candidate_page_check", sql`${t.page}>=0`),
+]);
+export const bankBalanceCheckpoints = reporting.table("bank_balance_checkpoint", {
+  householdId: uuid("household_id").notNull(), runId: uuid("run_id").notNull(), generationId: uuid("generation_id").notNull(), accountId: uuid("account_id").notNull(),
+  currency: text().notNull().references(() => currencies.code), effectiveDate: date("effective_date").notNull(),
+  calculatedBalance: numeric("calculated_balance"), reconciledBalance: numeric("reconciled_balance"), result: jsonb().notNull(),
+}, t => [primaryKey({ columns: [t.runId,t.accountId,t.effectiveDate] }),
+  foreignKey({ columns: [t.householdId,t.runId,t.generationId], foreignColumns: [bankCandidates.householdId,bankCandidates.runId,bankCandidates.generationId] }),
+  foreignKey({ columns: [t.householdId,t.accountId], foreignColumns: [accounts.householdId,accounts.id] }),
+]);
+
+export const reportReleases = ops.table("report_release", {
+  id: uuid().defaultRandom().primaryKey(), householdId: uuid("household_id").notNull(), runId: uuid("run_id").notNull(),
+  sourceRevision: integer("source_revision").notNull(), asOf: date("as_of").notNull(), state: text().notNull().default("published"),
+  publishedAt: instant("published_at").notNull().defaultNow(), retiredAt: instant("retired_at"),
+}, t => [unique("report_release_scope").on(t.householdId,t.id), unique("report_release_run").on(t.runId),
+  foreignKey({ columns: [t.householdId,t.runId], foreignColumns: [calculationRuns.householdId,calculationRuns.id] }),
+  check("report_release_revision_check", sql`${t.sourceRevision}>0`), check("report_release_state_check", sql`${t.state} in ('published','previous','retired')`),
+]);
+export const reportReleaseAccounts = ops.table("report_release_account", {
+  householdId: uuid("household_id").notNull(), releaseId: uuid("release_id").notNull(), accountId: uuid("account_id").notNull(),
+  sourceRunId: uuid("source_run_id").notNull(), generationId: uuid("generation_id").notNull(), effectiveDate: date("effective_date").notNull(),
+}, t => [primaryKey({ columns: [t.releaseId,t.accountId] }),
+  foreignKey({ columns: [t.householdId,t.releaseId], foreignColumns: [reportReleases.householdId,reportReleases.id] }),
+  foreignKey({ columns: [t.householdId,t.sourceRunId,t.generationId], foreignColumns: [bankCandidates.householdId,bankCandidates.runId,bankCandidates.generationId] }),
+  foreignKey({ columns: [t.householdId,t.accountId], foreignColumns: [accounts.householdId,accounts.id] }),
+]);
+export const currentReportReleases = ops.table("current_report_release", {
+  householdId: uuid("household_id").primaryKey(), releaseId: uuid("release_id").notNull(), updatedAt: instant("updated_at").notNull().defaultNow(),
+}, t => [foreignKey({ columns: [t.householdId,t.releaseId], foreignColumns: [reportReleases.householdId,reportReleases.id] })]);
+export const reportRequestPins = ops.table("report_request_pin", {
+  id: uuid().defaultRandom().primaryKey(), householdId: uuid("household_id").notNull(), releaseId: uuid("release_id").notNull(), expiresAt: instant("expires_at").notNull(),
+}, t => [foreignKey({ columns: [t.householdId,t.releaseId], foreignColumns: [reportReleases.householdId,reportReleases.id] }), index("report_pin_expiry").on(t.expiresAt)]);

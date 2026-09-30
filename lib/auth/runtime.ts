@@ -38,15 +38,15 @@ export function checkRequest(request: Request, mutation = false) {
   if (request.headers.get("host") !== new URL(origin).host) throw new AccessError(403, "Untrusted application origin.");
   if (mutation && request.headers.get("origin") !== origin) throw new AccessError(403, "Reload this page before continuing.");
 }
-export async function boundedBody(request: Request) {
-  if (Number(request.headers.get("content-length") ?? 0) > 32768) throw new AccessError(413, "Request is too large.");
+export async function boundedBody(request: Request, limit = 32768) {
+  if (Number(request.headers.get("content-length") ?? 0) > limit) throw new AccessError(413, "Request is too large.");
   const reader = request.body?.getReader();
   if (!reader) return "";
   const chunks: Uint8Array[] = []; let size = 0;
   while (true) {
     const { done, value } = await reader.read(); if (done) break;
     size += value.length;
-    if (size > 32768) { await reader.cancel(); throw new AccessError(413, "Request is too large."); }
+    if (size > limit) { await reader.cancel(); throw new AccessError(413, "Request is too large."); }
     chunks.push(value);
   }
   return Buffer.concat(chunks).toString("utf8");

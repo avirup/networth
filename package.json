@@ -26,26 +26,31 @@
     "local:auth": "node scripts/prepare-local-auth.mjs",
     "db:migrate": "node --conditions=react-server --import tsx scripts/admin.ts migrate",
     "auth:recover-owner": "node --conditions=react-server --import tsx scripts/admin.ts recover-owner",
-    "test:e2e:auth": "playwright test --config playwright.auth.config.ts"
+    "test:e2e:auth": "node --conditions=react-server node_modules/@playwright/test/cli.js test --config playwright.auth.config.ts",
+    "workflows:prepare": "node --conditions=react-server --import tsx scripts/admin.ts prepare-worker",
+    "workflows:verify": "node --conditions=react-server --import tsx scripts/admin.ts verify-capacity"
   },
   "dependencies": {
+    "@auth/core": "0.41.3",
     "@node-rs/argon2": "2.2.1",
     "decimal.js": "10.6.0",
     "drizzle-orm": "0.45.2",
     "inngest": "4.20.0",
     "next": "16.3.5",
     "next-auth": "5.0.0-beta.32",
+    "papaparse": "5.7.0",
     "pg": "8.23.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "server-only": "0.0.1",
-    "zod": "4.6.4",
-    "@auth/core": "0.41.3"
+    "zod": "4.6.4"
   },
   "devDependencies": {
+    "@next/env": "16.3.5",
     "@playwright/test": "1.63.0",
     "@tailwindcss/postcss": "4.3.3",
     "@types/node": "22.20.2",
+    "@types/papaparse": "5.5.2",
     "@types/pg": "8.23.1",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
@@ -56,9 +61,8 @@
     "tailwindcss": "4.3.3",
     "tsx": "4.23.13",
     "typescript": "5.9.3",
-    "vitest": "4.1.11",
     "vite": "7.3.6",
-    "@next/env": "16.3.5"
+    "vitest": "4.1.11"
   },
   "overrides": {
     "vite": "$vite",

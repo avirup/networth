@@ -2,7 +2,7 @@
 
 Phase 3 implements closed registration, owner bootstrap, invitations, recovery,
 revocable sessions, household permissions and Postgres isolation. Financial uploads,
-reports and Inngest jobs remain unavailable until their implementation phases.
+bank report reads and signed Inngest jobs require schema 9 plus a reviewed capacity lease.
 
 ## Local installation
 
@@ -57,7 +57,7 @@ explicitly assume `networth_auth`. Financial query entry points must use
 transaction-local user/household/session settings, then assumes `networth_member`.
 RLS independently verifies those settings against the live session. Pool reuse clears
 both role and settings at transaction end. The worker role has no data grants and
-cannot be assumed by the runtime login; bounded workflow grants belong to Phase 6.
+cannot be assumed by the runtime login; Phase 6 provisions only bounded worker functions.
 The privileged identity service is a trusted server boundary, not a general query API.
 
 All identity tables use FORCE RLS. Scoped invitation/reset/audit foreign keys prevent

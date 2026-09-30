@@ -1,5 +1,8 @@
+import { workflowResumeFlow } from "./workflow-resume-flow";
+import { importFlow } from "./import-flow";
 import { expect, test } from "@playwright/test";
 test("setup, codes, sign-in, invitation, recovery and access protection", async ({ page, request, browser }, testInfo) => {
+  test.setTimeout(120_000);
   expect((await request.post("/api/identity/setup", { data: {} })).status()).toBe(403);
   expect((await request.get("/dashboard", { maxRedirects: 0 })).status()).toBe(307);
   expect((await request.post("/api/identity/setup", { headers: { origin: "http://127.0.0.1:3102" }, data: { padding: "x".repeat(33000) } })).status()).toBe(413);
@@ -21,9 +24,11 @@ test("setup, codes, sign-in, invitation, recovery and access protection", async 
   await page.getByLabel("Password", { exact: true }).fill("synthetic owner password");
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
-  await expect(page.getByText("Your household is ready")).toBeVisible();
+  await expect(page.getByText("No published report yet")).toBeVisible();
   const session = await page.request.get("/api/auth/session");
   expect(await session.text()).not.toMatch(/sid|reference|tokenHash/);
+  expect((await page.request.post("/api/workflows/resume", { headers: { origin: "http://127.0.0.1:3102" }, data: { runId: "00000000-0000-4000-8000-000000000001" } })).status()).toBe(403);
+  await importFlow(page, testInfo);
   await page.goto("/setup");
   await expect(page).toHaveURL(/\/dashboard\/settings$/);
   const cookies = await page.context().cookies();
@@ -33,6 +38,7 @@ test("setup, codes, sign-in, invitation, recovery and access protection", async 
   await page.getByLabel("Current password").fill("synthetic owner password");
   await page.getByRole("button", { name: "Confirm password", exact: true }).click();
   await expect(page.getByText("Password confirmed for five minutes.")).toBeVisible();
+  await workflowResumeFlow(page);
   await page.getByLabel("Member email").fill("viewer@example.test");
   await page.getByRole("button", { name: "Create invitation" }).click();
   await expect(page.locator(".private-link")).toBeVisible();
@@ -58,6 +64,11 @@ test("setup, codes, sign-in, invitation, recovery and access protection", async 
   await guest.screenshot({ path: testInfo.outputPath("settings-mobile.png"), fullPage: true });
   const forbidden = await guest.request.post("/api/identity/invite", { headers: { origin: "http://127.0.0.1:3102" }, data: { email: "another@example.test", role: "viewer" } });
   expect(forbidden.status()).toBe(403);
+  expect((await guest.request.post("/api/workflows/resume", { headers: { origin: "http://127.0.0.1:3102" }, data: { runId: "00000000-0000-4000-8000-000000000001" } })).status()).toBe(403);
+  expect((await guest.request.post("/api/imports/confirm", { headers: { origin: "http://127.0.0.1:3102" }, data: {} })).status()).toBe(403);
+  await guest.goto("/dashboard/imports");
+  await expect(guest.getByText("You have view access.", { exact: false })).toBeVisible();
+  await expect(guest.getByRole("button", { name: "Confirm and save batch" })).toHaveCount(0);
   await guest.goto("/recover");
   await guest.getByLabel("Email", { exact: true }).fill("owner@example.test");
   await guest.getByLabel("Recovery code", { exact: false }).fill(code!);

@@ -4,6 +4,8 @@ import { z } from "zod";
 const secret = z.string().min(32);
 const fields = {
   DATABASE_URL: z.url().refine((value) => value.startsWith("postgres:") || value.startsWith("postgresql:")),
+  DATABASE_WORKER_URL: z.url().refine((value) => value.startsWith("postgres:") || value.startsWith("postgresql:")),
+  CRON_SECRET: secret,
   DATABASE_ADMIN_URL: z.url().refine((value) => value.startsWith("postgres:") || value.startsWith("postgresql:")),
   AUTH_SECRET: secret,
   BOOTSTRAP_SECRET: secret,
@@ -56,7 +58,7 @@ export function inspectEnvironment(source: Record<string, string | undefined> = 
       invalid.add("APP_URL");
     }
   }
-  for (const key of ["DATABASE_URL", "DATABASE_ADMIN_URL"] as const) {
+  for (const key of ["DATABASE_URL", "DATABASE_ADMIN_URL", "DATABASE_WORKER_URL"] as const) {
     if (!values[key]) continue;
     const url = new URL(values[key]);
     if (deployment !== "local" && url.searchParams.get("sslmode") !== "verify-full") {

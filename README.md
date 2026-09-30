@@ -3,9 +3,12 @@
 A private household finance tracker built around reviewed, standardized CSV imports
 and a ₹0 recurring hosting target: Vercel Hobby, Neon Free Postgres and Inngest Hobby.
 
-**Current status: household access and the bank financial foundation are implemented.** Create the first
-owner, save recovery codes, sign in and invite household members. The financial schema, defined categories and bank CSV v1 contract are ready. Upload review
-and reports remain unavailable; the optional local preview uses synthetic data.
+**Current status: Phase 6 bank recalculation and complete report publication are implemented.**
+Create the owner, invite members, and use Imports to validate CSVs, assign categories and
+review possible duplicates. A confirmed import is delivered to bounded Inngest steps,
+published through one atomic release manifest, and served as exact decimal strings. The
+overview shows reconciled INR bank/cash balances and monthly categories; unsupported FX,
+cards, investments, ownership views and performance remain explicitly unavailable.
 No hosted services are provisioned by these commands.
 
 ## Local development
@@ -33,8 +36,9 @@ In a second terminal, start the optional local Inngest Dev Server:
 npm run inngest:dev
 ```
 
-The local endpoint registers no jobs yet. There is no paid service or production key
-required for local development. The Compose database binds only to loopback port 15432
+The local endpoint registers the durable calculation and resume workflows after a separate
+worker connection and reviewed capacity lease are configured. There is no paid service or
+production key required for local development. The Compose database binds only to loopback port 15432
 and keeps data in the `networth-local_postgres-data` volume. `npm run db:stop` stops it
 without deleting that volume. Integration checks use the separate `networth_test`
 database. Identity checks drop/recreate its `core` schema; keep it disposable.
@@ -42,8 +46,11 @@ database. Identity checks drop/recreate its `core` schema; keep it disposable.
 For first-owner setup, database roles, private invites, upgrades and sole-owner recovery,
 see [installation and authentication](docs/authentication.md).
 
-See [bank CSV v1 and Phase 4 migration](docs/bank-csv-v1.md) for templates, category codes,
+See [bank CSV v1 and financial migrations](docs/bank-csv-v1.md) for templates, category codes,
 accounting rules and the upgrade command for your existing installation.
+See [reviewed bank imports](docs/bank-imports.md) for the Phase 5 workflow and limits,
+[durable workflow delivery](docs/workflow-delivery.md) for installation and capacity
+verification, and [report publication](docs/report-publication.md) for Phase 6 release rules.
 
 ## Local UI preview
 
@@ -89,10 +96,9 @@ deliberately do not satisfy hosted/production readiness requirements.
 ## Safety and implementation notes
 
 - Public liveness: `/api/health`; generic financial readiness: `/api/health/ready`.
-  Readiness stays 503 until the later installation and workflow steps are implemented.
+  Readiness stays 503 until schema, workflow configuration and a reviewed capacity lease agree.
 - Root redirects to `/login`; `/setup` requires the bootstrap secret and `/status`
-  requires an active owner. Financial endpoints and hosted Inngest execution remain
-  disabled. No setup or migration runs at startup/build.
+  requires an active owner. No setup or migration runs at startup/build.
 - Previews cannot access the database or run workflows even if they inherit credentials.
 - Credentials plus Auth.js's built-in database strategy are incompatible in the pinned
   version. Authentication uses the tested encrypted cookie with a revocable Postgres
@@ -103,3 +109,9 @@ deliberately do not satisfy hosted/production readiness requirements.
 See [architecture and directory boundaries](docs/architecture.md),
 [the authentication compatibility decision](docs/decisions/0001-auth-session-compatibility.md),
 and [project instructions](AGENTS.md).
+
+Phase 6 includes [bank calculation contributions](docs/bank-calculations.md), private
+[candidate contributions](docs/bank-candidates.md), reconciled [bank balances](docs/bank-balances.md),
+bounded orchestration, incremental release manifests, request pins and safe derived cleanup.
+The live overview always reads one published release. Phase 7 will add the remaining bank
+dashboard drilldowns, trends and cash-flow views.

@@ -23,10 +23,9 @@ fixtures never query a database or accept uploads. The state selector demonstrat
 loading, empty, error/retry, incomplete, stale, quota-paused, and long/negative/unknown
 values. The loading example deliberately remains until another state is selected.
 
-`/login`, `/setup`, and `/status` expose only honest unavailable screens. No credential
-form, account creation, authenticated household route, financial endpoint, or import
-operation is enabled in this phase. `/dashboard` and financial APIs remain closed.
-Detailed installation status requires the later owner authorization implementation.
+`/login` supports authentication and `/setup` bootstraps the first owner; subsequent
+household access requires an invitation. `/dashboard` requires active household
+membership, and `/status` requires owner authorization. Owners and editors can review bank imports; viewers can read batch status. The live overview reads one authenticated schema 9 release and follows the global month selector. Synthetic preview reports never stand in for real reports.
 
 ## Shared components
 
@@ -36,13 +35,15 @@ Detailed installation status requires the later owner authorization implementati
 | `components/ui/primitives.tsx` | Brand, MoneyValue, DataQualityIndicator, ChartFrame, empty/error/loading states, Disclosure and AccessLayout |
 | `components/ui/dialog.tsx` | Native dialog with focus containment, Escape/backdrop dismissal and focus return |
 | `components/ui/data-table.tsx` | Bounded presentation table, accessible sort state and independently expandable details |
-| `components/dashboard` | StatCard, Portfolio, cash balance and credit utilisation presentation |
+| `components/dashboard` | Preview panels plus the live pinned bank overview and report states |
+| `components/imports/bank-import.tsx` | Bank CSV preview, categories, review warnings, explicit confirmation and manual batch status |
 | `lib/presentation` | Exact decimal-string formatting, month handling, centralized name/navigation |
 
-The small report table uses semantic HTML; it has no paging or virtualisation.
-Introduce the selected TanStack Table/shadcn/Recharts packages when real import or
-report interactions need them, checking compatibility then. This phase adds no
-JavaScript dependencies or alternative component/chart library. Static sample chart
+The small preview report table uses semantic HTML; it has no paging or virtualisation.
+Import review uses paginated semantic HTML and native form controls. Introduce the
+selected TanStack Table/shadcn/Recharts packages only when interactions need them,
+checking compatibility then. PapaParse handles local CSV parsing; no alternative
+component/chart library is introduced. Static sample chart
 geometry is intentionally confined to the preview, so it cannot become an accidental
 financial calculation implementation.
 
@@ -52,6 +53,29 @@ retains the full value in its title. It never changes stored values or computes
 financial totals. Unknown amounts display a dash with a reason, never zero. Display
 sorting compares decimal values exactly; unknowns remain last in either direction.
 Future reporting contracts must supply rounded values and disclosure precision.
+
+## Reviewed bank imports
+
+Phase 5 extends the same Poppins, light lavender, white-panel and violet-action
+workspace. Statement fields use two columns, stacking below 701px. Review displays
+50 transactions per page; rows become labelled blocks below 1001px of panel width,
+with a single content column below 601px. Existing events and observations load in
+100-record pages, and history shows the latest 100 batches.
+
+Labelled inputs, fieldset legends, native selects and checkboxes retain keyboard
+access and shared visible focus. Loading and result messages use status announcements;
+errors use alerts. Eligible income/expense categories can be assigned individually
+or to selected rows in bulk. Transfers, card principal and equity adjustments do not
+receive spending categories.
+
+Choosing a CSV creates a browser preview. Requesting a review sends its bounded
+payload but saves nothing. Each warning requires acknowledgement before explicit
+whole-batch confirmation; editing the import clears its review and acknowledgements.
+Cancel discards the preview. Readiness and history refresh through user actions,
+without polling.
+
+An amber panel with a textual “Confirmation paused” status explains unavailable admission and offers a readiness recheck. Confirmation becomes available only during a manually reviewed workflow-capacity lease; configuration alone does not enable it. A queued batch is not a published report. See [bank-imports.md](bank-imports.md)
+for the server limits, admission contract and evidence semantics.
 
 ## Visual contract
 
@@ -89,6 +113,11 @@ The test runner explicitly enables the local preview on one isolated server and
 verifies that a Vercel preview server refuses it. No database is required for these
 UI checks. Use `PLAYWRIGHT_BROWSERS_PATH=.cache/playwright` if browsers were installed
 in this repository's ignored local cache.
+
+`npm run test:e2e:auth` covers authenticated access and the reviewed import flow
+against guarded local test Postgres, using synthetic capacity verification for
+confirmation. See [bank-imports.md](bank-imports.md) for integration coverage; these
+checks do not establish production readiness or test unpublished reports.
 
 Visual evidence is written into `test-results` for wide desktop, collapsed rail,
 tablet, mobile drawer/month picker and 320px edge values. The evidence uses only

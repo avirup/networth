@@ -2,7 +2,7 @@ import { readdir, readFile } from "node:fs/promises";
 import nextEnv from "@next/env";
 
 nextEnv.loadEnvConfig(process.cwd(), true);
-const keys = ["AUTH_SECRET", "BOOTSTRAP_SECRET", "DATABASE_URL", "DATABASE_ADMIN_URL", "INNGEST_EVENT_KEY", "INNGEST_SIGNING_KEY", "INNGEST_SIGNING_KEY_FALLBACK"];
+const keys = ["AUTH_SECRET", "BOOTSTRAP_SECRET", "DATABASE_URL", "DATABASE_ADMIN_URL", "DATABASE_WORKER_URL", "CRON_SECRET", "INNGEST_EVENT_KEY", "INNGEST_SIGNING_KEY", "INNGEST_SIGNING_KEY_FALLBACK"];
 const secrets = keys.flatMap((key) => {
   const value = process.env[key];
   return value && value.length >= 8 ? [value, encodeURIComponent(value)] : [];

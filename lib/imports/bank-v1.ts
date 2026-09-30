@@ -53,4 +53,3 @@ export function validateBankBatch(manifestInput: unknown, rowInputs: unknown[]) 
   }
   return { manifest, rows };
 }
-// CSV parsing belongs to Phase 5 (PapaParse). This phase validates parsed string cells.

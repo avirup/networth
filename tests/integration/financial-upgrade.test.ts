@@ -10,7 +10,7 @@ it("upgrades a populated v1 identity database without changing users or sessions
   const client=await pool.connect();
   let userId:string,householdId:string;
   try{
-    await client.query("drop schema if exists ops cascade");await client.query("drop schema if exists core cascade");
+    await client.query("drop schema if exists reporting cascade; drop schema if exists ops cascade");await client.query("drop schema if exists core cascade");
     await client.query("do $$ begin if not exists(select from pg_roles where rolname='networth_test_app') then create role networth_test_app login password 'synthetic-runtime-test-only' noinherit nosuperuser nocreatedb nocreaterole nobypassrls; end if; end $$");
     await client.query("begin");
     await client.query("create schema core");await client.query("create table core.schema_migration(name text primary key,checksum text not null,applied_at timestamptz not null default now())");
@@ -29,7 +29,7 @@ it("upgrades a populated v1 identity database without changing users or sessions
   }catch(error){await client.query("rollback");throw error;}finally{client.release();}
   await drizzle(pool).transaction(tx=>migrateIdentity(tx,'networth_test_app'));
   await drizzle(pool).transaction(tx=>migrateIdentity(tx,'networth_test_app'));
-  expect((await pool.query("select schema_version from core.system_installation")).rows[0].schema_version).toBe(2);
+  expect((await pool.query("select schema_version from core.system_installation")).rows[0].schema_version).toBe(9);
   expect((await pool.query("select password_hash from core.auth_credential where user_id=$1",[userId!])).rows[0].password_hash).toBe('synthetic-preservation-marker');
   expect((await pool.query("select user_id,revoked_at from core.auth_session")).rows).toEqual([{user_id:userId!,revoked_at:null}]);
   expect((await pool.query("select count(*)::int n from core.dim_category where household_id=$1",[householdId!])).rows[0].n).toBe(15);

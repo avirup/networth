@@ -1,3 +1,11 @@
+import { bankBalanceWorkerCases } from "../support/bank-balance-worker-cases";
+import { reportReleaseCases } from "../support/report-release-cases";
+import { bankCandidateCases } from "../support/bank-candidate-cases";
+import { bankBalanceCases } from "../support/bank-balance-cases";
+import { bankCalculationCases } from "../support/bank-calculation-cases";
+import { planningCases } from "../support/planning-cases";
+import { workflowCases } from "../support/workflow-cases";
+import { importCases } from "../support/import-cases";
 import { financialCases } from "../support/financial-cases";
 import { beforeAll, afterAll, describe, expect, it } from "vitest";
 import { Pool } from "pg";
@@ -25,7 +33,7 @@ let ownerId: string;
 let householdId: string;
 
 beforeAll(async () => {
-  await admin.query("drop schema if exists ops cascade");
+  await admin.query("drop schema if exists reporting cascade; drop schema if exists ops cascade");
   await admin.query("drop schema if exists core cascade");
   await admin.query("do $$ begin if not exists(select from pg_roles where rolname='networth_test_admin') then create role networth_test_admin login password 'synthetic-admin-test-only' nosuperuser nocreatedb createrole noinherit nobypassrls; end if; end $$");
   await admin.query("grant create on database networth_test to networth_test_admin");
@@ -132,10 +140,10 @@ describe.sequential("installation and identity", () => {
     await admin.query("update core.household_membership set role='owner' where user_id=$1", [ownerId]);
   });
   it("keeps authenticated owner status available while incompatible operations fail closed", async () => {
-    await admin.query("update core.system_installation set schema_version=3");
+    await admin.query("update core.system_installation set schema_version=10");
     await expect(service.resolve(reference)).rejects.toMatchObject({ status: 503 });
-    expect((await service.resolveStatus(reference)).schemaVersion).toBe(3);
-    await admin.query("update core.system_installation set schema_version=2");
+    expect((await service.resolveStatus(reference)).schemaVersion).toBe(10);
+    await admin.query("update core.system_installation set schema_version=9");
   });
   it("replays checksummed migrations and rejects modified history", async () => {
     await drizzle(admin).transaction(tx => migrateIdentity(tx, "networth_test_app"));
@@ -172,4 +180,12 @@ describe.sequential("installation and identity", () => {
   });
 
   financialCases(admin, service, () => householdId, () => ownerId);
+  importCases(admin, service, () => householdId);
+  workflowCases(admin, service, () => householdId);
+  planningCases(admin, service, () => householdId);
+  const calculationSession = bankCalculationCases(admin, service, () => householdId);
+  bankCandidateCases(admin, service, () => householdId, calculationSession);
+  bankBalanceCases(admin, service, () => householdId, calculationSession);
+  const completedBankRun = bankBalanceWorkerCases(admin, service, () => householdId, calculationSession);
+  reportReleaseCases(admin, service, () => householdId, calculationSession, completedBankRun);
 });

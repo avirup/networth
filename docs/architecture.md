@@ -36,7 +36,7 @@ schema, configuration and verified workflows are ready. It never applies migrati
 The current phase intentionally cannot report financial readiness. Operator startup diagnostics
 identify missing/invalid variable names; the public HTTP response does not.
 
-Identity access accepts schema versions 1–2; financial readiness requires version 2. Missing, invalid, older or
+Identity access accepts schema versions 1–8; financial readiness requires version 8. Missing, invalid, older or
 newer versions refuse application operations; an authenticated owner retains limited
 status access if the identity contract remains readable. Setup and local upgrade commands
 apply checksummed migrations under a shared advisory lock. No startup migration runs.
@@ -85,3 +85,29 @@ Technical references:
 - [Inngest local development](https://www.inngest.com/docs/local-development)
 
 See [bank CSV v1](bank-csv-v1.md) for the Phase 4 accounting contract, categories and upgrade instructions.
+
+Phase 5 uses pinned PapaParse 5.7.0 with dynamic typing disabled. Pure CSV/review contracts
+live under `lib/imports`; `db/imports/service.ts` orchestrates the verified member
+transaction. Capacity reservations, source evidence, exact ledger postings, revisions,
+outbox and dirty ranges commit together. See [bank imports](bank-imports.md).
+
+Phase 6 uses a dedicated restricted worker connection for durable outbox delivery,
+fixed-revision planning, exact bank movement/category pages, reconciled bank checkpoints and
+complete release publication. Each page uses committed resource reservations and token-fenced
+completion. Inngest serializes each household and carries identifiers rather than financial
+payloads. A stale run is superseded and cannot replace a newer revision.
+
+Release manifests select changed candidate generations and reuse unchanged accounts. The
+current pointer changes only after a complete manifest validates. Authenticated report reads
+pin one release for 15 minutes and return decimal strings from `reporting.bank_overview`.
+Only reconciled INR bank/cash checkpoints enter known net worth; missing or foreign values
+stay explicit. See [report publication](report-publication.md).
+
+The daily recovery route dispatches pending delivery work and removes only expired,
+unreferenced derived state. Provider headroom remains a manual operational fact: the local
+administrator reviews every shared free-tier meter and records a short bounded lease with
+`npm run workflows:verify`. Expiry pauses imports/calculation and preserves the last release.
+
+Phase 7 extends the live bank dashboard with drilldowns, trends and cash-flow views. Cards,
+investments, ownership allocation, dated FX and performance remain unavailable until their
+product-specific phases.

@@ -8,7 +8,7 @@ if (!["missing", "preview"].includes(mode) || !["3100", "3101"].includes(port)) 
 
 // Explicit empty values prevent Next from loading actual local secrets for these servers.
 const env = {
-  ...process.env,
+  ...process.env, DATABASE_WORKER_URL: "", CRON_SECRET: "",
   NODE_ENV: "production", VERCEL: "", VERCEL_ENV: "",
   DATABASE_URL: "", DATABASE_ADMIN_URL: "", LOCAL_RUNTIME: "", AUTH_SECRET: "", BOOTSTRAP_SECRET: "", APP_URL: "",
   INNGEST_EVENT_KEY: "", INNGEST_SIGNING_KEY: "", INNGEST_SIGNING_KEY_FALLBACK: "", INNGEST_DEV: "0",

@@ -68,7 +68,8 @@ sum of INR book values.
 Categories are seeded separately for every household. Grocery, Fees & charges and
 Entertainment are included, along with the other codes in `categories-v1.csv`. Unknown
 codes and income/expense kind mismatches are errors; an explicit blank remains
-Uncategorized. Account/category management and bulk assignment arrive in Phase 5.
+Uncategorized. Phase 5 provides account selection and individual/bulk assignment of
+the defined categories.
 Automatic categorization rules are not implemented yet. Existing confirmed category
 references cannot be overwritten: reclassification uses sourced reversal/replacement.
 Cosmetic category names may change; category code and income/expense kind cannot.
@@ -84,7 +85,7 @@ income/expense merely to make the file pass.
 The review envelope supplies the selected account UUID, native currency, coverage start
 and end, `complete`/`partial`/`balance_only` declaration, nullable opening/closing balances,
 `openingKnown` and a reason when history is unknown. The example manifest illustrates
-this; users will select these in the Phase 5 interface, not copy real account numbers
+this; users select these in the Imports interface rather than copy real account numbers
 into CSVs. Dates use the household's India reporting context; balances are at the start
 and end of the declared coverage respectively.
 
@@ -98,8 +99,8 @@ difference and never converted silently into income or spending.
 `balance_only` has no transaction rows; its observations become retained source evidence
 in confirmation. Database batch `row_count` counts all retained evidence rows (including
 statement observations), not just transaction CSV rows. The overall confirmation limit
-is 5,000 source rows and 3,000,000 encoded bytes, including review metadata. Phase 5 must
-check the final serialized request, not just the CSV portion.
+is 5,000 source rows and 3,000,000 encoded bytes, including review metadata. Phase 5 checks
+the final serialized request, including the account and review decisions.
 
 ## Transfer and FX handling
 
@@ -143,8 +144,9 @@ exposed. Reporting scope inclusion selects owners/accounts/holdings without addi
 holding twice when its parent account is also selected.
 
 Financial operations use the existing verified member transaction boundary. Viewers
-cannot write; editors/owners can insert supported reviewed records. No worker grants,
-public write APIs, dispatcher or report releases are enabled by this phase.
+cannot write; editors/owners can insert supported reviewed records. Phase 5 adds authenticated
+review/confirmation APIs and Phase 6 publishes complete bank releases. See
+[reviewed bank imports](bank-imports.md) and [report publication](report-publication.md).
 
 ## Upgrading an existing local installation
 
@@ -155,10 +157,11 @@ upgrade. With the private `DATABASE_ADMIN_URL` available locally, run:
 npm run db:migrate
 ```
 
-The migration seeds category definitions and a zero source revision for existing
-households, then advances the schema to version 2. Fresh setup runs the same migrations.
-Identity access remains compatible with version 1 so you can sign in before migration;
-financial readiness requires version 2. Nothing migrates automatically at startup.
+The migrations seed category definitions and a zero source revision for existing
+households, add workflow delivery, bounded calculation and release publication, and advance
+the schema to version 9. Fresh setup runs the same migrations. Identity access remains
+compatible with versions 1–9 so you can sign in before migration; financial readiness
+requires version 9. Nothing migrates automatically at startup.
 
 ## Guidance for external CSV conversion
 
@@ -174,3 +177,7 @@ When using an external tool such as ChatGPT, provide this contract and request:
 
 Inspect that output against your original statement before confirmation. This application
 has no hosted AI, raw-statement parser, bank connection or automatic import approval.
+
+Phase 5 retains two statement observation rows per batch, leaving room for 4,998 CSV
+transactions within the 5,000-evidence-row limit. The full request, including review
+metadata and warning acknowledgements, must fit 3,000,000 UTF-8 bytes.
