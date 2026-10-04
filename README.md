@@ -60,105 +60,22 @@ never counted as additional assets.
 
 ## Deploy to Vercel
 
-The reference deployment uses [Vercel](https://vercel.com/) for the web app,
-[Neon](https://neon.com/) for Postgres, and [Inngest](https://www.inngest.com/) for
-durable recalculation. Each service currently offers a free plan, but allowances and
-terms can change. Review the current limits before enabling imports. The project never
-upgrades a plan or purchases capacity automatically.
+Use your own [Vercel Hobby](https://vercel.com/docs/plans/hobby),
+[Neon Free](https://neon.com/pricing), and
+[Inngest Hobby](https://www.inngest.com/pricing) accounts. The target is ₹0 recurring
+hosting for personal use. Stay on free plans and check their current allowances before
+enabling imports; the app never purchases capacity. Use the included `vercel.app`
+address—no domain purchase is needed.
 
-### Guided setup (recommended)
+The guided path below creates the database roles and secrets for you. You need Git,
+Node.js 24, npm 12.2 or newer within npm 12, and a trusted computer for administration.
+Docker, `psql`, and manual SQL are not needed for this path. The commands assume a
+Bash-compatible terminal; `nvm` commands require [nvm](https://github.com/nvm-sh/nvm)
+to be installed. If you already have a compatible Node/npm pair, skip those commands.
 
-The guided installer keeps the separate runtime, worker, and administrator database
-identities while hiding their SQL and password generation from the normal setup path.
-You need Node.js 24 LTS, npm 12, a Neon database, a Vercel project, and an Inngest account.
+### 1. Get the app
 
-1. Fork this repository, clone your fork, and install the locked dependencies:
-
-   ```bash
-   git clone https://github.com/YOUR_GITHUB_USER/networth.git
-   cd networth
-   nvm install
-   nvm use
-   npm install --global npm@12.2.0
-   npm ci
-   ```
-
-2. Choose the Vercel project name so you know its production URL. In Neon, create a
-   project and copy its database-owner **direct** connection URL, then run:
-
-   ```bash
-   npm run deploy:prepare
-   ```
-
-   Enter the Neon URL at the hidden prompt and the final Vercel production URL when
-   requested. The command enforces `sslmode=verify-full`, creates two restricted logins,
-   generates independent secrets, applies the reviewed schema, grants the worker role,
-   and writes `.env.deploy.local`. It never prints a credential and will not overwrite
-   an existing private configuration. If you are intentionally recovering a failed
-   earlier setup whose database roles already exist, use
-   `npm run deploy:prepare -- --rotate`. If Vercel later assigns a different domain,
-   update `APP_URL` in the private file and in Vercel before opening `/setup`.
-
-3. Import your fork into Vercel. Add the non-empty values from `.env.deploy.local` to
-   the **Production** environment and deploy. Leave the three blank Inngest values out;
-   the integration adds them later. Do not add these values to Preview.
-
-4. Open `https://YOUR_APP/setup`, enter the generated `BOOTSTRAP_SECRET`, and create the
-   first owner. Save all eight recovery codes.
-
-5. Connect the project through Inngest's official Vercel integration and redeploy. Then
-   inspect the Neon, Vercel, and Inngest usage dashboards. When every account is below
-   the 80% threshold, enable a conservative 24-hour import allowance:
-
-   ```bash
-   npm run deploy:enable -- personal
-   ```
-
-   `personal` allows 10 imports and 500 bounded calculation attempts. Use `regular` for
-   up to 30 imports and 1,500 attempts after confirming that the larger allowance fits
-   the provider capacity you actually observed. Neither preset purchases capacity or
-   renews itself.
-
-6. Check the completed installation:
-
-   ```bash
-   npm run deploy:check
-   ```
-
-   The checker verifies the live app and Inngest endpoint, migration records, first-owner
-   setup, database-role separation, and the current capacity lease without printing
-   secrets.
-
-7. Remove `DATABASE_ADMIN_URL` and `BOOTSTRAP_SECRET` from Vercel Production and redeploy.
-   Keep `.env.deploy.local` only on the trusted administration computer for upgrades,
-   recovery, and future capacity reviews.
-
-8. After the synthetic import succeeds, create and verify the first encrypted local backup:
-
-   ```bash
-   npm run backup:export:deploy -- backups/first-bank-milestone
-   npm run backup:verify -- backups/first-bank-milestone
-   ```
-
-   Follow the [backup and restore drill](docs/backup-restore.md) before importing personal
-   records.
-
-The remaining section documents every underlying step for operators who need custom role
-names, custom capacity budgets, or manual recovery.
-
-### Manual setup (advanced)
-
-You need:
-
-- a GitHub account and your own fork or copy of this repository;
-- Vercel, Neon, and Inngest accounts;
-- a trusted computer with Git, Node.js 24 LTS, npm 12, `psql`, and OpenSSL;
-- a password manager for database URLs, secrets, and recovery codes.
-
-### 1. Fork the repository
-
-Use GitHub's **Fork** button, then clone your fork on the trusted computer you will use
-for administration:
+Fork this repository on GitHub, then clone your fork:
 
 ```bash
 git clone https://github.com/YOUR_GITHUB_USER/networth.git
@@ -169,245 +86,112 @@ npm install --global npm@12.2.0
 npm ci
 ```
 
-Do not commit `.env.local`, financial CSV files, database dumps, recovery codes, or
-provider credentials.
+### 2. Prepare your database
 
-### 2. Create the Neon database and restricted roles
+Create a Neon Free project. In its connection dialog, select the database owner,
+turn connection pooling **off**, and copy the connection URL.
 
-Create a Neon project and keep its default database. You will use three independent
-connections to that same database:
-
-| Variable | Database identity | Purpose |
-| --- | --- | --- |
-| `DATABASE_ADMIN_URL` | Neon database/schema owner | Initial setup, migrations, worker grants, and recovery only |
-| `DATABASE_URL` | `networth_app` restricted login | Normal authenticated web requests |
-| `DATABASE_WORKER_URL` | `networth_jobs` restricted login | Bounded background calculations |
-
-Copy the owner's **direct** connection string from Neon. Connect as that owner without
-putting the URL into shell history:
+Choose a Vercel project name, then run:
 
 ```bash
-read -rsp "Neon admin URL: " DATABASE_ADMIN_URL
-export DATABASE_ADMIN_URL
-psql "$DATABASE_ADMIN_URL"
+npm run deploy:prepare
 ```
 
-Create the two hosted login roles in `psql`:
+Paste the Neon URL at the hidden prompt, then enter your intended production address,
+such as `https://my-networth.vercel.app`. The command prepares the schema, creates
+restricted app and worker logins, generates secrets, and saves them in
+`.env.deploy.local`. Keep this Git-ignored file private; you will use it for future
+administration. Do not run preparation again for ordinary updates.
 
-```sql
-CREATE ROLE networth_app
-  LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOBYPASSRLS;
+### 3. Deploy the website
 
-CREATE ROLE networth_jobs
-  LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOBYPASSRLS;
+In Vercel, choose **Add New → Project** and import your fork.
 
-\password networth_app
-\password networth_jobs
-```
+- Use the **Next.js** framework preset and **Node.js 24.x**.
+  See [Vercel's supported Node versions](https://vercel.com/docs/functions/runtimes/node-js/node-js-versions).
+- Set the install command to `npm install --global npm@12.2.0 && npm ci`,
+  and the build command to `npm run build`.
+- Open `.env.deploy.local` in your editor. Add its seven non-empty variables to
+  Vercel's **Production** environment only. When entering a value manually, omit the
+  surrounding quotes. Leave the three blank `INNGEST_…` entries out.
+- Deploy. Check the assigned production domain: if it differs from your chosen address,
+  update `APP_URL` in both Vercel and `.env.deploy.local`, then redeploy.
 
-Generate different strong passwords at the two interactive prompts. Check the result:
+Do not add local-development flags or test database credentials to Vercel.
+Environment changes take effect after a redeploy.
 
-```sql
-SELECT rolname, rolsuper, rolcreatedb, rolcreaterole, rolinherit, rolbypassrls
-FROM pg_roles
-WHERE rolname IN ('networth_app', 'networth_jobs');
-```
+### 4. Create your owner account and connect Inngest
 
-Every boolean column should be `false`. Exit with `\q`. Use Neon's connection dialog,
-select each new role, and copy its connection string. A pooled connection is suitable
-for `DATABASE_URL` and `DATABASE_WORKER_URL`; keep the direct owner connection for
-`DATABASE_ADMIN_URL`.
+Open `https://YOUR_APP/setup`. Enter the `BOOTSTRAP_SECRET` from your private file,
+create your owner account, and save all eight recovery codes. Sign in.
 
-All three hosted URLs must target the same database and use TLS verification:
+Follow [Inngest's Vercel integration instructions](https://www.inngest.com/docs/durable-execution/deploying-functions/platforms/vercel)
+to connect this project. Ensure Production receives `INNGEST_EVENT_KEY` and
+`INNGEST_SIGNING_KEY`, then redeploy. In Inngest, check that the app and its functions
+are registered at `https://YOUR_APP/api/inngest`. A successful endpoint response alone
+does not prove that registration or delivery works.
 
-```text
-?sslmode=verify-full
-```
+### 5. Enable imports
 
-Add the parameter with `?` when it is the first query parameter, or with `&` when other
-parameters are present. If the URL already contains `sslmode`, replace its value instead
-of adding a second copy. Do not use the Neon owner connection as the runtime or worker
-connection. The migrations create an internal NOLOGIN role named `networth_worker`, so
-do not use that name for the hosted worker login.
-
-See [Neon's Vercel connection guide](https://neon.com/docs/guides/vercel-manual),
-[Neon's role distinction](https://neon.com/docs/changelog/2023-12-23), and
-[PostgreSQL role membership](https://www.postgresql.org/docs/current/role-membership.html).
-
-### 3. Generate application secrets
-
-Generate three independent values and save them in your password manager:
+Check usage in all three provider dashboards, including other projects on the same
+accounts. If usage is below 80% and the allowance below fits the remaining capacity,
+run on your administration computer:
 
 ```bash
-openssl rand -hex 32  # AUTH_SECRET
-openssl rand -hex 32  # BOOTSTRAP_SECRET
-openssl rand -hex 32  # CRON_SECRET
+npm run deploy:enable -- personal
+npm run deploy:check
 ```
 
-- `AUTH_SECRET` encrypts authentication state.
-- `BOOTSTRAP_SECRET` authorizes the one-time first-owner setup.
-- `CRON_SECRET` authorizes Vercel's daily recovery request.
+The personal allowance lasts **24 hours** and caps work at **10 imports, 500 calculation
+attempts, and 100 MB of derived storage**. It does not renew automatically.
+`deploy:check` should report `PASS` for every check; `NEXT` means a setup or capacity
+step remains. Neither command verifies your provider usage for you.
 
-Never reuse a database password for any of these values.
+Remove `DATABASE_ADMIN_URL` and `BOOTSTRAP_SECRET` from **Vercel Production**, then
+redeploy. Keep them in your private local file for administration and recovery.
 
-### 4. Create the Vercel project
+### 6. Check an import and save a backup
 
-After the Neon roles and secrets are ready, use the button below or import your fork
-from Vercel's **New Project** screen.
+Sign in and open **Import data → Bank account**. Create a new account named
+“Synthetic test bank”. Save the following as a local CSV and upload it:
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Favirup%2Fnetworth&env=DATABASE_URL%2CDATABASE_ADMIN_URL%2CDATABASE_WORKER_URL%2CAUTH_SECRET%2CBOOTSTRAP_SECRET%2CCRON_SECRET%2CAPP_URL)
-
-Choose the project name before entering `APP_URL`; its value must be the exact final
-HTTPS origin with no trailing path, query, or fragment, for example:
-
-```text
-https://your-networth-project.vercel.app
+```csv
+schema_version,row_id,transaction_ref,transaction_date,description,direction,amount,currency,event_type,category,book_amount_inr,fx_rate,related_row_id
+bank-v1,test-1,TEST-001,2026-09-01,Synthetic groceries,debit,100.00,INR,expense,grocery,,,
 ```
 
-If Vercel assigns a different production domain, update `APP_URL` to that domain and
-redeploy before opening `/setup`.
+Enter coverage **1–30 September 2026**, choose complete transactions, and enter
+opening balance **1000** and closing balance **900**. Review and acknowledge any
+displayed warnings, then confirm. Select **September 2026** in the dashboard and
+check that the published report includes **₹100 Grocery expense**. Statement balances
+alone may leave account valuation incomplete; the app will show the reason.
 
-Add these variables to the **Production** environment only:
+This saves real ledger records, so use a separate test installation if you want your
+personal ledger to contain no synthetic entries. Also try an invitation from Settings
+and check the installation state at `/status`.
 
-| Variable | Initial value | Keep in the web deployment? |
-| --- | --- | --- |
-| `DATABASE_URL` | Restricted `networth_app` URL | Yes |
-| `DATABASE_ADMIN_URL` | Direct Neon owner URL | Remove after first-owner setup |
-| `DATABASE_WORKER_URL` | Restricted `networth_jobs` URL | Yes |
-| `AUTH_SECRET` | First generated secret | Yes |
-| `BOOTSTRAP_SECRET` | Second generated secret | Remove after first-owner setup |
-| `CRON_SECRET` | Third generated secret | Yes |
-| `APP_URL` | Exact production HTTPS origin | Yes |
-
-Do not configure `INNGEST_DEV`, `LOCAL_RUNTIME`, `LOCAL_UI_PREVIEW`, or
-`TEST_DATABASE_URL` on Vercel. Do not expose any server variable with a
-`NEXT_PUBLIC_` prefix. Preview deployments deliberately refuse database, login, and
-workflow operations even if credentials are accidentally assigned to them.
-
-Deploy the project. Vercel reads `vercel.json` and installs a daily
-`/api/workflows/recover` cron. When `CRON_SECRET` is configured, Vercel sends it as the
-Bearer authorization value. Environment changes affect only new deployments, so use
-**Redeploy** after changing variables. See Vercel's official guides for
-[Git deployments](https://vercel.com/docs/git),
-[environment variables](https://vercel.com/docs/environment-variables), and
-[cron security](https://vercel.com/docs/cron-jobs/manage-cron-jobs).
-
-### 5. Create the first owner
-
-Open this route on the production deployment:
-
-```text
-https://your-networth-project.vercel.app/setup
-```
-
-Enter `BOOTSTRAP_SECRET`, your owner email, and a strong password. Setup applies the
-versioned migrations and creates the installation, first household, and first owner in
-one transaction. Save all eight recovery codes before continuing. The bootstrap route
-cannot replace an existing owner or run a second time.
-
-If setup fails, inspect the Vercel function log and verify that the direct admin URL is
-reachable, targets the same database as the other connections, includes
-`sslmode=verify-full`, and has permission to create roles and schemas.
-
-### 6. Connect Inngest
-
-In Inngest, install the official Vercel integration and connect this Vercel project.
-It adds production `INNGEST_EVENT_KEY` and `INNGEST_SIGNING_KEY` variables and syncs the
-app after a deployment. Redeploy if the integration does not trigger one automatically.
-The serving endpoint is:
-
-```text
-https://your-networth-project.vercel.app/api/inngest
-```
-
-Confirm in Inngest that the app and its functions are registered. Keep signing and
-event keys secret. `INNGEST_SIGNING_KEY_FALLBACK` is needed only during a deliberate
-key rotation. See Inngest's official
-[Vercel deployment guide](https://www.inngest.com/docs/deploy/vercel),
-[signing-key guide](https://www.inngest.com/docs/platform/signing-keys), and
-[event-key guide](https://www.inngest.com/docs/events/creating-an-event-key).
-
-### 7. Prepare the worker
-
-On your trusted local checkout, create an owner-readable `.env.local` containing the
-production values. This file is Git-ignored:
-
-```dotenv
-DATABASE_URL=postgresql://networth_app:...@.../...?sslmode=verify-full
-DATABASE_ADMIN_URL=postgresql://owner:...@.../...?sslmode=verify-full
-DATABASE_WORKER_URL=postgresql://networth_jobs:...@.../...?sslmode=verify-full
-AUTH_SECRET=...
-BOOTSTRAP_SECRET=...
-CRON_SECRET=...
-APP_URL=https://your-networth-project.vercel.app
-INNGEST_EVENT_KEY=...
-INNGEST_SIGNING_KEY=...
-```
-
-Restrict the file, then grant the worker only the reviewed capabilities:
+Create and verify an encrypted backup on your computer:
 
 ```bash
-chmod 600 .env.local
-npm run workflows:prepare
+npm run backup:export:deploy -- backups/first-import
+npm run backup:verify -- backups/first-import
 ```
 
-The command uses `DATABASE_ADMIN_URL` to grant the restricted worker login membership
-in the internal worker role. It refuses an unsuitable worker identity.
+The export asks for your owner password and a separate backup passphrase. Keep the
+passphrase safe and follow the [restore drill](docs/backup-restore.md#restore-drill)
+before relying on the app for personal records.
 
-### 8. Review capacity and enable imports
+### When you next import
 
-The application starts with import confirmation paused. Before enabling it, manually
-inspect your Neon, Vercel, and Inngest dashboards, including usage from other projects.
-Stay below the documented 80% deferral threshold and reserve room for callbacks,
-retries, publication, and recovery.
+If confirmation is paused because the 24-hour allowance expired, review provider usage
+again and rerun `npm run deploy:enable -- personal`. You can read existing reports
+without renewing the allowance while the underlying services remain available.
+The `regular` preset allows 30 imports, 1,500 attempts, and 200 MB for 24 hours;
+use it only when that capacity is available.
 
-After that review, issue a short capacity lease from the trusted checkout:
-
-```bash
-npm run workflows:verify -- 10 500 150000000 60 "Checked Neon, Vercel and Inngest dashboards"
-```
-
-The positional values are:
-
-1. remaining imports;
-2. remaining calculation attempts;
-3. remaining derived-storage bytes;
-4. lease duration in minutes;
-5. an audit reason.
-
-The example values are ceilings, not a recommendation. Reduce them to the capacity you
-actually verified. The command does not contact providers, infer headroom, or buy
-capacity. When the lease expires or a budget is exhausted, new work pauses while the
-last published report and authoritative financial history remain intact. Review usage
-again before renewing it.
-
-### 9. Remove bootstrap privileges
-
-After setup and worker preparation succeed:
-
-1. remove `BOOTSTRAP_SECRET` and `DATABASE_ADMIN_URL` from Vercel's Production variables;
-2. keep both values privately on the trusted administration computer for upgrades and
-   sole-owner recovery;
-3. redeploy so the removal reaches the running application.
-
-The web app should retain only the restricted runtime and worker database connections.
-
-### 10. Verify the deployment
-
-Check these routes and actions:
-
-1. `GET /api/health` returns liveness without exposing private configuration.
-2. `GET /api/health/ready` becomes ready after schema, Inngest, worker, and lease checks
-   agree. A `503` before completing those steps is expected.
-3. Sign in at `/login`, open `/status`, and verify the installation state.
-4. Create a member invitation and open it in a private browser window.
-5. Download the synthetic example from `/templates/bank-v1-example.csv`.
-6. Import it into a test bank account, review every row, confirm it, and verify that a
-   published release appears in Overview, Accounts, and Activity.
-7. Inspect the Vercel, Neon, and Inngest logs and usage dashboards. Logs must not contain
-   connection strings, tokens, raw CSV contents, or complete account identifiers.
-
-Do this synthetic end-to-end check before importing personal records.
+For custom roles, smaller budgets, or recovery from a failed preparation, see the
+[manual deployment guide](docs/deployment-manual.md). Guided setup already prepares
+the worker; you do not need to run the manual worker commands as well.
 
 ## Updating an installation
 
@@ -421,13 +205,14 @@ npm ci
 ```
 
 Back up the database, restore that backup into a separate database, and test it before
-upgrading. Make `DATABASE_ADMIN_URL` available only on the trusted computer, then run:
+upgrading. Keep the hosted credentials in `.env.deploy.local` on the trusted computer, then run:
 
 ```bash
-npm run db:migrate
+node --env-file=.env.deploy.local --conditions=react-server --import tsx scripts/admin.ts migrate
 ```
 
-This command upgrades an existing completed installation. Fresh installations use
+This explicitly loads the hosted configuration; plain `npm run db:migrate` uses
+`.env.local` instead. This command upgrades an existing completed installation. Fresh installations use
 `/setup` instead. No build, startup, or ordinary request applies migrations. After a
 successful migration, deploy the matching application revision and repeat the hosted
 verification. Never edit an already-applied migration.
@@ -534,16 +319,25 @@ build. Integration and authenticated browser tests require the local disposable
 
 **`Administration failed. Verify configuration...`**
 
-The administrative commands deliberately hide database details. Check that `.env.local`
-contains the direct `DATABASE_ADMIN_URL`, the database is reachable, TLS verification is
+The administrative commands deliberately hide database details. Check that the file
+loaded by your command (`.env.deploy.local` for guided hosted commands, `.env.local`
+for ordinary local commands) contains the direct `DATABASE_ADMIN_URL`, the database is reachable, TLS verification is
 enabled when hosted, and `/setup` has completed. `npm run db:migrate` is for an existing
 installation; use `/setup` for a new one.
 
 **Readiness returns `503`.**
 
-Finish the migration/setup, connect Inngest, run `workflows:prepare`, and issue a current
-capacity lease after checking provider usage. Readiness fails closed if any requirement
-is missing or expired.
+The public `/api/health/ready` route currently always returns `503`: its workflow
+verification flag is not wired. Use `npm run deploy:check`, the authenticated `/status`
+screen, and a successful import-to-report run instead. `/api/health` checks liveness only.
+
+**`deploy:prepare` fails or says configuration already exists.**
+
+Keep the existing `.env.deploy.local`; do not regenerate it to update the app. For a
+failed preparation, check the direct Neon owner URL and role permissions. Only use
+`npm run deploy:prepare -- --rotate` when intentionally replacing existing restricted
+role passwords and no private configuration file exists; existing deployments will need
+the replacement credentials. See the [manual guide](docs/deployment-manual.md).
 
 **Login or setup does not work on a preview URL.**
 
