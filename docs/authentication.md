@@ -2,12 +2,13 @@
 
 Phase 3 implements closed registration, owner bootstrap, invitations, recovery,
 revocable sessions, household permissions and Postgres isolation. Financial uploads,
-bank report reads and signed Inngest jobs require schema 10 plus a reviewed capacity lease.
+financial report reads, local backup and signed Inngest jobs require schema 13 plus a reviewed capacity lease.
 
 ## Local installation
 
-Use Node 22 and the committed npm lockfile. Docker is an optional convenience for
-local Postgres, not an application or hosting dependency.
+Use Node 24 LTS, npm 12 and the committed npm lockfile. Node 26 is also supported for
+local development. Docker is an optional convenience for local Postgres, not an
+application or hosting dependency.
 
 ```sh
 npm ci
@@ -27,6 +28,10 @@ your owner account. Save the eight recovery codes and acknowledge them before
 continuing to sign-in. Nothing creates an account automatically. After setup, remove
 `BOOTSTRAP_SECRET` and `DATABASE_ADMIN_URL` from the running web deployment; keep the
 admin connection privately for upgrades/recovery. Restart after environment changes.
+
+Encrypted exports additionally require the active owner's password in the trusted local
+terminal. Password hashes and live authentication secrets are never copied into a backup;
+see [backup and restore](backup-restore.md).
 
 ## Database connections
 

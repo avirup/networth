@@ -1,6 +1,6 @@
 # Durable workflow delivery and execution
 
-Phase 6 is complete for the bank-only calculation pipeline. The import transaction commits
+The calculation pipeline publishes bank and card evidence under one source revision. The import transaction commits
 financial history and one immutable outbox intent together. Post-commit dispatch records its
 claim before making one bounded network attempt. Send failure never rolls back the confirmed
 ledger. Stable event IDs, expiring leases and a durable receipt make retries idempotent.
@@ -40,7 +40,7 @@ Git-ignored `.env.deploy.local` created by the guided installer.
 
 The lower-level procedure is:
 
-1. Apply reviewed migrations with `npm run db:migrate` (current schema 10).
+1. Apply reviewed migrations with `npm run db:migrate` (current schema 13).
 2. Create a separate least-privilege Postgres login and set private
    `DATABASE_WORKER_URL`. Hosted connections require `sslmode=verify-full`.
 3. Run `npm run workflows:prepare` locally with the admin connection.

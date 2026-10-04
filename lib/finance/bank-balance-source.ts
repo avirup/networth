@@ -11,7 +11,7 @@ export type BankBalancePosting = {
 
 // Source provenance must already be scoped to the captured household/revision.
 // Aggregate authoritative postings independently of potentially repeated source links.
-export function bankBalanceMovements(scope: Pick<BankBalanceInput["scope"], "accountId" | "currency" | "start">, postings: BankBalancePosting[]) {
+export function bankBalanceMovements(scope: Pick<BankBalanceInput["scope"], "accountId" | "currency" | "start" | "ledgerKind">, postings: BankBalancePosting[]) {
   if (postings.length > BANK_BALANCE_POSTING_LIMIT) throw new Error("Balance posting limit exceeded.");
   const daily = new Map<string, AccountMovement>(), eventIds = new Set<string>();
   let unresolvedEventCount = 0;
@@ -19,9 +19,9 @@ export function bankBalanceMovements(scope: Pick<BankBalanceInput["scope"], "acc
     economicDate(p.date);
     if (!p.id || !p.eventId || p.date < scope.start || typeof p.reversed !== "boolean" || typeof p.reviewed !== "boolean" || !["complete", "opening_history_unknown", "unresolved"].includes(p.quality)) throw new Error("Invalid bank balance provenance.");
     const kind = p.kind === "reversal" ? p.originalKind : p.kind;
-    if (eventIds.has(p.eventId) || p.currency !== scope.currency || !kind || !["income", "expense", "expense_refund", "income_reversal", "transfer", "card_repayment", "opening_balance", "unresolved_reconciliation"].includes(kind)) throw new Error("Unsupported bank balance posting shape.");
+    if (eventIds.has(p.eventId) || p.currency !== scope.currency || !kind || !["income", "expense", "expense_refund", "income_reversal", "transfer", "card_repayment", "card_purchase", "card_refund", "card_interest", "card_fee", "opening_balance", "unresolved_reconciliation"].includes(kind)) throw new Error("Unsupported account balance posting shape.");
     eventIds.add(p.eventId);
-    const row = daily.get(p.date) ?? { accountId: scope.accountId, currency: scope.currency, ledgerKind: "asset", date: p.date, nativeDelta: "0", bookDeltaInr: "0", cashDelta: "0", openingDelta: "0", unresolvedDelta: "0", postingCount: 0, incompleteEvidence: false };
+    const row = daily.get(p.date) ?? { accountId: scope.accountId, currency: scope.currency, ledgerKind: scope.ledgerKind ?? "asset", date: p.date, nativeDelta: "0", bookDeltaInr: "0", cashDelta: "0", openingDelta: "0", unresolvedDelta: "0", postingCount: 0, incompleteEvidence: false };
     row.nativeDelta = new D(row.nativeDelta).plus(decimal(p.native)).toFixed(12);
     row.bookDeltaInr = new D(row.bookDeltaInr).plus(decimal(p.book)).toFixed(12);
     const bucket = kind === "opening_balance" ? "openingDelta" : kind === "unresolved_reconciliation" ? "unresolvedDelta" : "cashDelta";

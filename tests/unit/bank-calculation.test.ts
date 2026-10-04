@@ -27,6 +27,25 @@ describe("bank movement calculation rules", () => {
     expect(result).not.toHaveProperty("netWorth");
     expect(result.accountMovements[0]).not.toHaveProperty("balance");
   });
+  it("tracks card spending on the liability while keeping repayments out of expenses", () => {
+    const purchase = event("card-purchase", "expense", "-200", "grocery");
+    purchase.legs = [
+      { ...purchase.legs[0]!, ledgerAccountId: "card-ledger", accountId: "card", kind: "liability", nativeAmount: "-200", bookAmountInr: "-200" },
+      { ...purchase.legs[1]!, ledgerAccountId: "grocery-ledger", accountId: null, kind: "expense", nativeAmount: "200", bookAmountInr: "200" },
+    ];
+    const refund = event("card-refund", "expense_refund", "20", "grocery");
+    refund.legs = [
+      { ...refund.legs[0]!, ledgerAccountId: "card-ledger", accountId: "card", kind: "liability", nativeAmount: "20", bookAmountInr: "20" },
+      { ...refund.legs[1]!, ledgerAccountId: "grocery-ledger", accountId: null, kind: "expense", nativeAmount: "-20", bookAmountInr: "-20" },
+    ];
+    const repayment = event("repayment", "card_repayment", "-100");
+    const result = calculateBankPage(context, [purchase, refund, repayment]);
+    expect(result.categoryMovements).toEqual([
+      { accountId: "card", month: "2026-09-01", kind: "expense", categoryId: "grocery", amountInr: "180.000000000000", postingCount: 2 },
+    ]);
+    expect(result.accountMovements.find(row => row.accountId === "card")).toMatchObject({ ledgerKind: "liability", nativeDelta: "-80.000000000000", cashDelta: "0.000000000000" });
+    expect(result.accountMovements.find(row => row.accountId === "bank")).toMatchObject({ ledgerKind: "asset", nativeDelta: "-100.000000000000", cashDelta: "-100.000000000000" });
+  });
   it("applies exact reversals once and preserves correction audit counts", () => {
     const original = event("old", "expense", "-200", "grocery");
     const corrected = event("new", "expense", "-150", "fees"); corrected.revision = 2;

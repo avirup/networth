@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { MIGRATIONS } from "@/db/auth/migrate";
 import { hostedDatabaseUrl, productionOrigin, RUNTIME_ROLE, WORKER_ROLE } from "@/lib/deployment/config";
+import { FINANCIAL_SCHEMA } from "@/lib/config/policy";
 
 type Result = { status: "PASS" | "NEXT" | "FAIL"; label: string };
 const results: Result[] = [];
@@ -58,7 +59,7 @@ async function main() {
       && migration.rows.every(row => expected.get(row.name) === row.checksum);
     record(migrationsMatch ? "PASS" : "FAIL", "all reviewed migrations and checksums are recorded");
     const installation = await admin.query<{ schema_version: number }>("select schema_version from core.system_installation");
-    record(installation.rows[0]?.schema_version === 10 ? "PASS" : "NEXT", "first owner setup and schema version 10");
+    record(installation.rows[0]?.schema_version === FINANCIAL_SCHEMA ? "PASS" : "NEXT", `first owner setup and schema version ${FINANCIAL_SCHEMA}`);
     const capacity = await admin.query<{ active: boolean }>(`select coalesce((select workflow_verified and verified_until>clock_timestamp() and remaining_imports>0 and remaining_storage_bytes>0 from ops.import_admission where singleton),false)
       and coalesce((select verified_until>clock_timestamp() and remaining_attempts>0 and remaining_storage_bytes>0 from ops.execution_capacity where singleton),false) active`);
     record(capacity.rows[0]?.active ? "PASS" : "NEXT", "current reviewed import capacity lease");

@@ -25,7 +25,7 @@ values. The loading example deliberately remains until another state is selected
 
 `/login` supports authentication and `/setup` bootstraps the first owner; subsequent
 household access requires an invitation. `/dashboard` requires active household
-membership, and `/status` requires owner authorization. Owners and editors can review bank imports; viewers can read batch status. The live Overview, Accounts and Activity screens read one authenticated schema 10 release and follow the global month selector. Synthetic preview reports never stand in for real reports. See [live bank reports](live-bank-reports.md).
+membership, and `/status` requires owner authorization. Owners and editors can review bank and card imports; viewers can read batch status. The live Overview, Accounts, Liabilities and Activity screens read one authenticated schema 13 installation and follow the global month selector. Synthetic preview reports never stand in for real reports. See [live bank reports](live-bank-reports.md) and [credit cards](credit-cards.md).
 
 ## Shared components
 
@@ -37,6 +37,7 @@ membership, and `/status` requires owner authorization. Owners and editors can r
 | `components/ui/data-table.tsx` | Bounded presentation table, accessible sort state and independently expandable details |
 | `components/dashboard` | Preview panels plus the live pinned bank overview and report states |
 | `components/imports/bank-import.tsx` | Bank CSV preview, categories, review warnings, explicit confirmation and manual batch status |
+| `components/imports/card-import.tsx` | Card CSV preview, facility/statement evidence, row decisions and explicit confirmation |
 | `lib/presentation` | Exact decimal-string formatting, month handling, centralized name/navigation |
 
 The small preview report table uses semantic HTML; it has no paging or virtualisation.
@@ -54,7 +55,7 @@ financial totals. Unknown amounts display a dash with a reason, never zero. Disp
 sorting compares decimal values exactly; unknowns remain last in either direction.
 Future reporting contracts must supply rounded values and disclosure precision.
 
-## Reviewed bank imports
+## Reviewed bank and card imports
 
 Phase 5 extends the same Poppins, light lavender, white-panel and violet-action
 workspace. Statement fields use two columns, stacking below 701px. Review displays
@@ -77,6 +78,12 @@ without polling.
 An amber panel with a textual “Confirmation paused” status explains unavailable admission and offers a readiness recheck. Confirmation becomes available only during a manually reviewed workflow-capacity lease; configuration alone does not enable it. A queued batch is not a published report. See [bank-imports.md](bank-imports.md)
 for the server limits, admission contract and evidence semantics.
 
+The statement-type switch opens a dedicated card workflow. Card fields capture the
+statement outstanding, payment date, minimum due, facility and credit limit. Repayments
+require an INR bank/cash account and never receive a spending category. The liabilities
+screen uses the same report release as the overview and shows explicit unknown, zero-limit
+and over-limit states without treating unused credit as an asset.
+
 ## Visual contract
 
 - Poppins 400/500/600/700 is self-hosted through `next/font/local`. Font version and
@@ -87,7 +94,7 @@ for the server limits, admission contract and evidence semantics.
   categories. Smaller error text uses a darker pink for contrast.
 - Panels use 14px corners, fine borders and 20px spacing. Persistent navigation is
   254px wide, or 82px collapsed; it becomes a native modal drawer below 901px.
-- Preserve the current reading order: three summary cards → monthly flow with a
+- Preserve the current reading order: summary cards → monthly flow with a
   largest-expense sentence → investment portfolio. Balance/liability panels occupy
   the right rail on wide screens and follow the primary column on smaller screens.
 - Period selection, profile and notifications share the flat topbar. No search or

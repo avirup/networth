@@ -42,9 +42,10 @@ audited invitations and recovery. See [authentication operations](../authenticat
 Recheck compatibility when upgrading the pinned beta.
 
 Argon2id parameters are 64 MiB, three passes, one lane and a 32-byte output,
-with independent random salts and parameters encoded in each hash. Native behavior
-is tested on local Node 22/Linux; benchmark the actual Vercel runtime before enabling
-production credentials. The test does not establish hosted capacity or free-tier use.
+with independent random salts and parameters encoded in each hash. Native behavior is
+tested on the supported local Node versions; benchmark the actual Vercel Node 24 runtime
+before enabling production credentials. The test does not establish hosted capacity or
+free-tier use.
 
 References checked during implementation:
 

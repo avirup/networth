@@ -7,7 +7,8 @@ import { hashPassword, verifyPassword } from "@/lib/auth/passwords";
 import { newToken, sessionDigest, protectedDigest, secretMatches, makeRecoveryCodes, normalizeCode } from "@/lib/auth/crypto";
 import { AccessError, invalidCredentials } from "@/lib/auth/errors";
 import { setupSchema, emailSchema, passwordSchema, invitationSchema, acceptSchema, recoverSchema, hasPermission, type Role, type Permission } from "@/lib/auth/validation";
-import { schemaIsCompatible } from "@/lib/config/policy";
+import { FINANCIAL_SCHEMA, schemaIsCompatible } from "@/lib/config/policy";
+import { operationsStatusSchema } from "@/lib/operations/status";
 
 export type Actor = { userId: string; householdId: string; role: Role; name: string; email: string; reauthenticated: boolean; schemaVersion: number };
 type Options = { db?: Database; admin?: Database; secret: string; bootstrapSecret?: string; runtimeRole: string };
@@ -109,7 +110,7 @@ export function createIdentityService(options: Options) {
         await tx.insert(credentials).values({ userId: user!.id, passwordHash });
         await tx.insert(memberships).values({ userId: user!.id, householdId: household!.id, role: "owner" });
         const codes = await storeCodes(tx, user!.id);
-        await tx.insert(installation).values({ householdId: household!.id, schemaVersion: 10 });
+        await tx.insert(installation).values({ householdId: household!.id, schemaVersion: FINANCIAL_SCHEMA });
         await audit(tx, { userId: user!.id, householdId: household!.id }, "setup_completed");
         return { recoveryCodes: codes };
       });
@@ -141,6 +142,15 @@ export function createIdentityService(options: Options) {
     },
     async resolveStatus(reference: string) {
       return run(tx => actorFor(tx, reference, "admin", false, undefined, true));
+    },
+    async operationsStatus(reference: string) {
+      return run(async tx => {
+        const actor = await actorFor(tx, reference, "admin");
+        await tx.execute(sql`select set_config('app.user_id',${actor.userId},true),set_config('app.household_id',${actor.householdId},true),set_config('app.session_hash',${sessionDigest(reference)},true)`);
+        await tx.execute(sql`set local role networth_member`);
+        const result = await tx.execute<{ value: Record<string, unknown> }>(sql`select ops.installation_status(${actor.householdId}) value`);
+        return operationsStatusSchema.parse(result.rows[0]!.value);
+      });
     },
     async scoped<T>(reference: string, householdId: string, permission: Permission, work: (tx: Transaction, actor: Actor) => Promise<T>) {
       return run(async tx => {

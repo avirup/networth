@@ -3,7 +3,7 @@ import type { AccountMovement, BankCalculationContext } from "./bank-calculation
 
 export const BANK_BALANCE_RULE = "bank-balance-v1" as const;
 export const BANK_BALANCE_WINDOW_LIMIT = 1000;
-type Scope = BankCalculationContext & { accountId: string; currency: string; start: string };
+type Scope = BankCalculationContext & { accountId: string; currency: string; start: string; ledgerKind?: "asset" | "liability" };
 type Opening = {
   // A reviewed opening is already included in the first day's openingDelta.
   // A checkpoint is the closing balance immediately before this window.
@@ -41,7 +41,7 @@ export function calculateBankBalance(input: BankBalanceInput) {
   const dates = new Set<string>();
   for (const row of movements) {
     const date = day(row.date);
-    if (row.accountId !== scope.accountId || row.currency !== scope.currency || row.ledgerKind !== "asset" || date < first || date > last || dates.has(row.date)) throw new Error("Movement is outside the bank window or repeats a daily grain.");
+    if (row.accountId !== scope.accountId || row.currency !== scope.currency || row.ledgerKind !== (scope.ledgerKind ?? "asset") || date < first || date > last || dates.has(row.date)) throw new Error("Movement is outside the account window or repeats a daily grain.");
     dates.add(row.date);
     if (!Number.isSafeInteger(row.postingCount) || row.postingCount < 1 || typeof row.incompleteEvidence !== "boolean") throw new Error("Invalid movement evidence.");
     const native = aggregate(row.nativeDelta), cash = aggregate(row.cashDelta), equity = aggregate(row.openingDelta), adjustment = aggregate(row.unresolvedDelta);

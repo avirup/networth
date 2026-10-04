@@ -5,6 +5,7 @@ import { sql } from "drizzle-orm";
 import { identity, checkRequest, boundedBody, sessionReference, json, failure } from "@/lib/auth/runtime";
 import { AccessError } from "@/lib/auth/errors";
 import { confirmImport, importStatus, reviewImport } from "@/db/imports/service";
+import { confirmCardImport, reviewCardImport } from "@/db/imports/card-service";
 import { canServeWorkflows } from "@/lib/config/policy";
 import { inspectEnvironment } from "@/lib/config/environment";
 export const runtime = "nodejs";
@@ -43,14 +44,17 @@ export async function POST(request: Request, context: { params: Promise<{ action
   try {
     checkRequest(request, true);
     const action = (await context.params).action;
-    if (!["review", "confirm"].includes(action)) throw new AccessError(404, "Not found.");
+    if (!["review", "confirm", "card-review", "card-confirm"].includes(action)) throw new AccessError(404, "Not found.");
     const service = identity(), reference = await sessionReference(request.headers), actor = await service.resolve(reference, "import");
     if (!request.headers.get("content-type")?.startsWith("application/json")) throw new AccessError(415, "JSON is required.");
     const raw = await boundedBody(request, 3_000_000);
     let input: unknown;
     try { input = JSON.parse(raw); } catch { throw new AccessError(400, "Invalid confirmation JSON."); }
-    if (action === "review") return json(withWorkflowStatus(await service.scoped(reference, actor.householdId, "import", (tx, active) => reviewImport(tx, active, input))));
-    const confirmed = await service.scoped(reference, actor.householdId, "import", (tx, active) => confirmImport(tx, active, input, Buffer.byteLength(raw), canServeWorkflows(inspectEnvironment()) && !!inspectEnvironment().values.DATABASE_WORKER_URL));
+    if (action === "review" || action === "card-review") return json(withWorkflowStatus(await service.scoped(reference, actor.householdId, "import", (tx, active) => action === "review" ? reviewImport(tx, active, input) : reviewCardImport(tx, active, input))));
+    const workflowConfigured = canServeWorkflows(inspectEnvironment()) && !!inspectEnvironment().values.DATABASE_WORKER_URL;
+    const confirmed = await service.scoped(reference, actor.householdId, "import", (tx, active) => action === "confirm"
+      ? confirmImport(tx, active, input, Buffer.byteLength(raw), workflowConfigured)
+      : confirmCardImport(tx, active, input, Buffer.byteLength(raw), workflowConfigured));
     // Financial commit has finished. Delivery failure must never turn it into a failed import.
     if (inspectEnvironment().values.DATABASE_WORKER_URL) {
       try { await dispatchPending({ householdId: actor.householdId, maximum: 1 }); }

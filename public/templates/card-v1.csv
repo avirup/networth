@@ -1,0 +1,1 @@
+schema_version,row_id,transaction_ref,transaction_date,description,direction,amount,currency,event_type,category,related_row_id

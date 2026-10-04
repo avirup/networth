@@ -1,0 +1,6 @@
+schema_version,row_id,transaction_ref,transaction_date,description,direction,amount,currency,event_type,category,related_row_id
+card-v1,purchase1,SYNTHETIC-P1,2026-09-03,Synthetic groceries,debit,1200.00,INR,card_purchase,grocery,
+card-v1,refund1,SYNTHETIC-R1,2026-09-06,Synthetic grocery refund,credit,200.00,INR,card_refund,grocery,purchase1
+card-v1,interest1,SYNTHETIC-I1,2026-09-10,Synthetic card interest,debit,50.00,INR,card_interest,fees,
+card-v1,fee1,SYNTHETIC-F1,2026-09-10,Synthetic card fee,debit,25.00,INR,card_fee,fees,
+card-v1,payment1,SYNTHETIC-PAY1,2026-09-15,Synthetic bank payment,credit,1000.00,INR,card_repayment,,

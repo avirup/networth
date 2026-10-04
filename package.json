@@ -4,9 +4,10 @@
   "private": true,
   "type": "module",
   "engines": {
-    "node": "22.x"
+    "node": "^24.15.0 || >=26.0.0 <27",
+    "npm": ">=12.2.0 <13"
   },
-  "packageManager": "npm@10.9.8",
+  "packageManager": "npm@12.2.0",
   "scripts": {
     "dev": "next dev --webpack --hostname 127.0.0.1",
     "build": "next build --webpack",
@@ -29,6 +30,11 @@
     "local:auth": "node scripts/prepare-local-auth.mjs",
     "db:migrate": "node --conditions=react-server --import tsx scripts/admin.ts migrate",
     "auth:recover-owner": "node --conditions=react-server --import tsx scripts/admin.ts recover-owner",
+    "backup:export": "node --conditions=react-server --import tsx scripts/backup.ts export",
+    "backup:export:deploy": "node --env-file=.env.deploy.local --conditions=react-server --import tsx scripts/backup.ts export",
+    "backup:verify": "node --conditions=react-server --import tsx scripts/backup.ts verify",
+    "backup:restore": "node --conditions=react-server --import tsx scripts/backup.ts restore",
+    "backup:restore:deploy": "node --env-file=.env.deploy.local --conditions=react-server --import tsx scripts/backup.ts restore",
     "test:e2e:auth": "node --conditions=react-server node_modules/@playwright/test/cli.js test --config playwright.auth.config.ts",
     "workflows:prepare": "node --conditions=react-server --import tsx scripts/admin.ts prepare-worker",
     "workflows:verify": "node --conditions=react-server --import tsx scripts/admin.ts verify-capacity"
@@ -37,43 +43,54 @@
     "@auth/core": "0.41.3",
     "@node-rs/argon2": "2.2.1",
     "decimal.js": "10.6.0",
-    "drizzle-orm": "0.45.2",
-    "inngest": "4.20.0",
-    "next": "16.3.5",
+    "drizzle-orm": "0.45.3",
+    "inngest": "4.21.0",
+    "next": "16.3.8",
     "next-auth": "5.0.0-beta.32",
     "papaparse": "5.7.0",
-    "pg": "8.23.0",
+    "pg": "8.23.1",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "server-only": "0.0.1",
-    "zod": "4.6.4"
+    "zod": "4.6.5"
   },
   "devDependencies": {
-    "@next/env": "16.3.5",
+    "@next/env": "16.3.8",
     "@playwright/test": "1.63.0",
     "@tailwindcss/postcss": "4.3.3",
-    "@types/node": "22.20.2",
+    "@types/node": "24.19.0",
     "@types/papaparse": "5.5.2",
     "@types/pg": "8.23.1",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
-    "drizzle-kit": "0.31.10",
+    "drizzle-kit": "0.31.11",
     "eslint": "9.39.5",
-    "eslint-config-next": "16.3.5",
-    "inngest-cli": "1.44.0",
+    "eslint-config-next": "16.3.8",
+    "inngest-cli": "1.45.1",
     "tailwindcss": "4.3.3",
-    "tsx": "4.23.13",
-    "typescript": "5.9.3",
-    "vite": "7.3.6",
-    "vitest": "4.1.11"
+    "tsx": "4.23.15",
+    "typescript": "6.0.3",
+    "vite": "8.3.2",
+    "vitest": "5.0.3"
   },
   "overrides": {
     "vite": "$vite",
+    "@grpc/grpc-js": "1.14.5",
     "@esbuild-kit/core-utils": {
       "esbuild": "0.25.12"
+    },
+    "glob": {
+      "brace-expansion": "2.1.7"
     },
     "inngest-cli": {
       "adm-zip": "0.6.1"
     }
+  },
+  "allowScripts": {
+    "esbuild@0.25.12": true,
+    "esbuild@0.28.2": true,
+    "inngest-cli@1.45.1": true,
+    "unrs-resolver@1.12.2": true,
+    "protobufjs": false
   }
 }

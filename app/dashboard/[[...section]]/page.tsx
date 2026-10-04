@@ -1,4 +1,4 @@
-import { BankImport } from "@/components/imports/bank-import";
+import { ImportWorkspace } from "@/components/imports/import-workspace";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireActor, identity } from "@/lib/auth/runtime";
@@ -17,8 +17,8 @@ export default async function DashboardPage({ params }: { params: Promise<{ sect
   const current = new Intl.DateTimeFormat("sv-SE", { year: "numeric", month: "2-digit", timeZone: "Asia/Kolkata" }).format(new Date());
   return <Workspace name={actor.name} role={actor.role} section={section} current={current}>
     {section === "settings" ? <><SecuritySettings members={members?.members} invitations={members?.invitations} />{actor.role === "owner" && <div className="access-actions"><Link href="/status" className="text-button">Installation status</Link></div>}</>
-      : section === "imports" ? <BankImport canImport={actor.role !== "viewer"} /> : section === "overview" ? <BankOverviewReport />
-        : section === "accounts" ? <BankOverviewReport view="accounts" /> : section === "activity" ? <BankOverviewReport view="activity" />
+      : section === "imports" ? <ImportWorkspace canImport={actor.role !== "viewer"} /> : section === "overview" ? <BankOverviewReport />
+        : section === "accounts" ? <BankOverviewReport view="accounts" /> : section === "liabilities" ? <BankOverviewReport view="liabilities" /> : section === "activity" ? <BankOverviewReport view="activity" />
           : <EmptyState title="This workspace is being prepared">This product area will become available in its implementation phase.</EmptyState>}
   </Workspace>;
 }

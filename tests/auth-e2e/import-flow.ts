@@ -8,6 +8,12 @@ import { beginCalculationPlan, advanceCalculationPlan } from "@/db/workflows/pla
 import { beginBankCandidate, advanceBankCandidate } from "@/db/calculations/bank-worker";
 import { advanceBalanceCandidate } from "@/db/calculations/bank-balance-worker";
 import { publishBankRelease } from "@/db/calculations/publish";
+async function selectSeptember2026(page: Page) {
+  await page.getByRole("button", { name: /^Select reporting month,/ }).click();
+  const currentYear = Number(new Intl.DateTimeFormat("en-CA", { year: "numeric", timeZone: "Asia/Kolkata" }).format(new Date()));
+  for (let year = currentYear; year > 2026; year--) await page.getByRole("button", { name: "Show previous year" }).click();
+  await page.getByRole("button", { name: "Sep", exact: true }).click();
+}
 export async function importFlow(page: Page, info: TestInfo) {
   page.setDefaultTimeout(15_000);
   const raw = process.env.TEST_DATABASE_URL ?? parseEnv(readFileSync(".env.local", "utf8")).TEST_DATABASE_URL;
@@ -20,6 +26,16 @@ export async function importFlow(page: Page, info: TestInfo) {
   try {
     await page.goto("/dashboard/imports");
     await expect(page.getByText("Confirmation paused.", { exact: false }).first()).toBeVisible();
+    await page.getByRole("button", { name: "Credit card" }).click();
+    await expect(page.getByRole("heading", { name: "Import a credit-card statement" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Download card template" })).toBeVisible();
+    await page.screenshot({ path: info.outputPath("card-import-desktop.png"), fullPage: true });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.screenshot({ path: info.outputPath("card-import-mobile.png"), fullPage: true });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await page.getByRole("button", { name: "Bank account" }).click();
+    await expect(page.getByRole("heading", { name: "Import a bank statement" })).toBeVisible();
     await page.getByLabel("New account name", { exact: true }).fill("Synthetic browser bank");
     await page.getByLabel("Bank-v1 CSV", { exact: true }).setInputFiles({ name: "synthetic.csv", mimeType: "text/csv", buffer: Buffer.from(csv) });
     await page.getByLabel("Opening balance (blank = unknown)").fill("200");
@@ -80,6 +96,7 @@ export async function importFlow(page: Page, info: TestInfo) {
     expect(reportResponse.status()).toBe(200);
     expect(await reportResponse.json()).toMatchObject({ release: { id: releaseId }, summary: { monthlyExpenseInr: "100.000000000000" } });
     await page.goto("/dashboard");
+    await selectSeptember2026(page);
     await expect(page.getByText("Synthetic browser bank")).toBeVisible();
     await expect(page.getByText("Entertainment", { exact: true })).toBeVisible();
     await expect(page.getByText("Incomplete data", { exact: true })).toBeVisible();
@@ -103,8 +120,17 @@ export async function importFlow(page: Page, info: TestInfo) {
         .filter(element => element.right > innerWidth + 1 || element.left < -1).slice(0, 20) }));
     expect(reportDimensions.scrollWidth, JSON.stringify(reportDimensions)).toBeLessThanOrEqual(reportDimensions.width);
     await page.setViewportSize({ width: 1440, height: 1000 });
-    await page.getByRole("link", { name: "Open activity" }).click();
+    await page.goto("/dashboard/liabilities");
+    await expect(page.getByRole("heading", { name: "Credit cards and facilities" })).toBeVisible();
+    await expect(page.getByText("No card report yet", { exact: true })).toBeVisible();
+    await page.screenshot({ path: info.outputPath("liabilities-desktop.png"), fullPage: true });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.screenshot({ path: info.outputPath("liabilities-mobile.png"), fullPage: true });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await page.goto("/dashboard/activity");
     await expect(page.getByRole("heading", { name: "Activity", exact: true })).toBeVisible();
+    await selectSeptember2026(page);
     await expect(page.getByText("Synthetic cinema", { exact: true })).toBeVisible();
     await page.locator(".activity-list details summary").first().click();
     await expect(page.getByText("Import revision", { exact: true })).toBeVisible();

@@ -102,7 +102,7 @@ accountId: uuid("account_id").notNull(), schemaVersion: text("schema_version").n
 }, t => [
 unique("import_batch_scope").on(t.householdId, t.id),
 foreignKey({ columns: [t.householdId, t.accountId], foreignColumns: [accounts.householdId, accounts.id] }),
-check("import_batch_0", sql`${t.schemaVersion}='bank-v1'`),
+check("import_batch_0", sql`${t.schemaVersion} in ('bank-v1','card-v1')`),
 check("import_batch_1", sql`${t.contentHash} ~ '^[0-9a-f]{64}$'`),
 check("import_batch_2", sql`${t.coverageStart}<=${t.coverageEnd}`),
 check("import_batch_3", sql`${t.completeness} in ('complete','partial','balance_only')`),
@@ -341,3 +341,42 @@ export const currentReportReleases = ops.table("current_report_release", {
 export const reportRequestPins = ops.table("report_request_pin", {
   id: uuid().defaultRandom().primaryKey(), householdId: uuid("household_id").notNull(), releaseId: uuid("release_id").notNull(), expiresAt: instant("expires_at").notNull(),
 }, t => [foreignKey({ columns: [t.householdId,t.releaseId], foreignColumns: [reportReleases.householdId,reportReleases.id] }), index("report_pin_expiry").on(t.expiresAt)]);
+
+// Card facility terms are immutable dated observations. New evidence appends a
+// revision; report readers select only observations captured by their release.
+export const creditFacilities = core.table("credit_facility", {
+  ...base(), name: text().notNull(), currency: text().notNull().default("INR"),
+}, t => [unique("credit_facility_scope").on(t.householdId,t.id),
+  check("credit_facility_name", sql`length(btrim(${t.name})) between 1 and 100`),
+  check("credit_facility_currency", sql`${t.currency}='INR'`)]);
+
+export const creditFacilityTerms = core.table("credit_facility_term", {
+  ...base(), facilityId: uuid("facility_id").notNull(), sourceId: uuid("source_id").notNull(),
+  effectiveDate: date("effective_date").notNull(), limitInr: numeric("limit_inr"),
+}, t => [
+  foreignKey({ columns: [t.householdId,t.facilityId], foreignColumns: [creditFacilities.householdId,creditFacilities.id] }),
+  foreignKey({ columns: [t.householdId,t.sourceId], foreignColumns: [sourceRecords.householdId,sourceRecords.id] }),
+  unique("facility_term_source").on(t.householdId,t.facilityId,t.sourceId,t.effectiveDate),
+  index("facility_term_date").on(t.householdId,t.facilityId,t.effectiveDate),
+  check("facility_term_limit", sql`${t.limitInr} is null or (${t.limitInr}>=0 and ${t.limitInr}<1e26 and scale(${t.limitInr})<=2)`),
+]);
+
+export const accountFacilityLinks = core.table("account_facility_link", {
+  ...base(), accountId: uuid("account_id").notNull(), facilityId: uuid("facility_id"),
+  sourceId: uuid("source_id").notNull(), effectiveDate: date("effective_date").notNull(),
+}, t => [
+  foreignKey({ columns: [t.householdId,t.accountId], foreignColumns: [accounts.householdId,accounts.id] }),
+  foreignKey({ columns: [t.householdId,t.facilityId], foreignColumns: [creditFacilities.householdId,creditFacilities.id] }),
+  foreignKey({ columns: [t.householdId,t.sourceId], foreignColumns: [sourceRecords.householdId,sourceRecords.id] }),
+  unique("facility_link_source").on(t.householdId,t.accountId,t.sourceId,t.effectiveDate),
+  index("facility_link_date").on(t.householdId,t.accountId,t.effectiveDate),
+]);
+
+export const cardStatements = core.table("card_statement", {
+  ...base(), observationId: uuid("observation_id").notNull(), paymentDueDate: date("payment_due_date"),
+  minimumDue: numeric("minimum_due"),
+}, t => [
+  foreignKey({ columns: [t.householdId,t.observationId], foreignColumns: [observations.householdId,observations.id] }),
+  unique("card_statement_observation").on(t.householdId,t.observationId),
+  check("card_statement_minimum", sql`${t.minimumDue} is null or (${t.minimumDue}>=0 and ${t.minimumDue}<1e26 and scale(${t.minimumDue})<=2)`),
+]);

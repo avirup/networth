@@ -1,6 +1,7 @@
 import { createInterface } from "node:readline/promises";
 import { Pool } from "pg";
 import { capacityPreset, hostedDatabaseUrl, productionOrigin, WORKER_ROLE } from "@/lib/deployment/config";
+import { FINANCIAL_SCHEMA } from "@/lib/config/policy";
 
 async function endpointAvailable(origin: string, path: string) {
   const response = await fetch(new URL(path, origin), { signal: AbortSignal.timeout(10_000), redirect: "error" });
@@ -44,7 +45,7 @@ async function main() {
         from core.system_installation i
       `, [WORKER_ROLE]);
       const row = state.rows[0];
-      if (!row || row.schema_version !== 10 || !row.worker_safe || BigInt(row.size) + BigInt(preset.storageBytes) > 400_000_000n) {
+      if (!row || row.schema_version !== FINANCIAL_SCHEMA || !row.worker_safe || BigInt(row.size) + BigInt(preset.storageBytes) > 400_000_000n) {
         throw new Error("The owner setup, worker restriction, schema or database headroom check failed.");
       }
       const reason = `${preset.name} preset after manual Neon, Vercel and Inngest dashboard review`;

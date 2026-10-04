@@ -2,40 +2,40 @@
 
 **A private, self-hosted household finance tracker built around reviewed CSV imports.**
 
-Import standardized bank transactions, check every row, classify income and expenses,
+Import standardized bank and credit-card transactions, check every row, classify income and expenses,
 and publish a consistent household dashboard. Financial records are written only after
 explicit confirmation. Money calculations use exact decimals from CSV through reports.
 
-[![Node.js 22](https://img.shields.io/badge/Node.js-22-5FA04E?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
+[![Node.js 24 LTS](https://img.shields.io/badge/Node.js-24_LTS-5FA04E?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
 [![Next.js 16](https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white)](https://nextjs.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-7C3AED.svg)](LICENSE)
 
 > [!IMPORTANT]
-> This is a bank-account MVP. Bank imports, categories, reconciliation, trends, cash
-> flow, account balances, and activity drilldowns work. Cards, investments, SGBs,
-> loans, portfolio performance, automatic statement parsing, and bank connections are
-> separate future contracts. Application-level backup and restore is also still planned;
-> establish and test a database backup before storing irreplaceable records.
+> Bank and credit-card imports, categories, reconciliation, trends, cash flow, account
+> balances, liabilities, shared credit facilities, and activity drilldowns work.
+> Investments, SGBs, loans, portfolio performance, automatic statement parsing, and bank
+> connections are separate future contracts. The current milestone includes encrypted local backup and
+> isolated restore; complete a restore drill before storing irreplaceable records.
 
 ## What it does
 
 - Keeps registration closed: the installer creates the first owner, then owners invite
   household members as viewers or editors.
-- Accepts a versioned `bank-v1` CSV instead of uploading a raw bank statement.
+- Accepts versioned `bank-v1` and `card-v1` CSV files instead of raw statements.
 - Lets an editor review statement coverage, account assignment, categories, transfers,
   possible duplicates, and reconciliation evidence before confirmation.
 - Classifies income and expenses into defined categories such as Grocery, Fees & charges,
   Entertainment, Salary, and Uncategorized.
 - Commits source evidence, a balanced ledger, and durable workflow intent atomically.
 - Recalculates bounded pages through Inngest and publishes a complete report release.
-- Shows net worth from reconciled INR bank/cash balances, monthly income and expenses,
-  cash flow, largest expenses, account details, and source-linked activity.
+- Shows net worth from reconciled INR bank/cash balances and evidenced card liabilities,
+  monthly income and expenses, cash flow, shared-limit utilization, account details, and source-linked activity.
 - Preserves unknown or incomplete data instead of inventing balances, FX values, cost
   basis, historical flows, or returns.
 
 ```mermaid
 flowchart LR
-    A[Standardized bank CSV] --> B[Private browser review]
+    A[Standardized bank or card CSV] --> B[Private browser review]
     B -->|Explicit confirmation| C[(Postgres evidence + ledger)]
     C --> D[Transactional outbox]
     D --> E[Bounded Inngest calculation]
@@ -48,11 +48,11 @@ flowchart LR
 | Area | Available now | Planned |
 | --- | --- | --- |
 | Access | Owner bootstrap, invites, roles, recovery codes, revocable sessions | External identity providers |
-| Import | Reviewed `bank-v1` CSV, exact retry detection, duplicate warnings | Raw statement parsing and bank integrations |
+| Import | Reviewed `bank-v1` and `card-v1` CSV, exact retry detection, duplicate warnings | Raw statement parsing and bank integrations |
 | Classification | Defined income/expense categories and Uncategorized | Automatic categorization rules |
-| Accounts | Bank and cash accounts, INR and evidenced foreign-currency book values | Cards, deposits, loans, investments, SGBs |
-| Reports | Overview, accounts, activity, 12-month trends, cash flow, reconciliation states | Portfolio allocation, returns, tax and liability reports |
-| Operations | Idempotent workflows, daily recovery cron, bounded provider capacity | Application-managed backup and restore |
+| Accounts | Bank/cash accounts, INR cards and shared credit facilities, evidenced foreign-currency book values | Deposits, loans, investments, SGBs |
+| Reports | Overview, accounts, liabilities, activity, 12-month trends, cash flow, reconciliation states | Portfolio allocation, returns and tax reports |
+| Operations | Idempotent workflows, daily recovery cron, bounded provider capacity, encrypted local backup and restore | Automated hosted backup storage |
 
 Transfers, card repayments, investment principal, and opening balances are intentionally
 excluded from ordinary expenses. Statement balances are reconciliation evidence and are
@@ -70,7 +70,7 @@ upgrades a plan or purchases capacity automatically.
 
 The guided installer keeps the separate runtime, worker, and administrator database
 identities while hiding their SQL and password generation from the normal setup path.
-You need Node.js 22, a Neon database, a Vercel project, and an Inngest account.
+You need Node.js 24 LTS, npm 12, a Neon database, a Vercel project, and an Inngest account.
 
 1. Fork this repository, clone your fork, and install the locked dependencies:
 
@@ -79,6 +79,7 @@ You need Node.js 22, a Neon database, a Vercel project, and an Inngest account.
    cd networth
    nvm install
    nvm use
+   npm install --global npm@12.2.0
    npm ci
    ```
 
@@ -132,6 +133,16 @@ You need Node.js 22, a Neon database, a Vercel project, and an Inngest account.
    Keep `.env.deploy.local` only on the trusted administration computer for upgrades,
    recovery, and future capacity reviews.
 
+8. After the synthetic import succeeds, create and verify the first encrypted local backup:
+
+   ```bash
+   npm run backup:export:deploy -- backups/first-bank-milestone
+   npm run backup:verify -- backups/first-bank-milestone
+   ```
+
+   Follow the [backup and restore drill](docs/backup-restore.md) before importing personal
+   records.
+
 The remaining section documents every underlying step for operators who need custom role
 names, custom capacity budgets, or manual recovery.
 
@@ -141,7 +152,7 @@ You need:
 
 - a GitHub account and your own fork or copy of this repository;
 - Vercel, Neon, and Inngest accounts;
-- a trusted computer with Git, Node.js 22, npm 10, `psql`, and OpenSSL;
+- a trusted computer with Git, Node.js 24 LTS, npm 12, `psql`, and OpenSSL;
 - a password manager for database URLs, secrets, and recovery codes.
 
 ### 1. Fork the repository
@@ -154,6 +165,7 @@ git clone https://github.com/YOUR_GITHUB_USER/networth.git
 cd networth
 nvm install
 nvm use
+npm install --global npm@12.2.0
 npm ci
 ```
 
@@ -404,6 +416,7 @@ Pull reviewed changes on the trusted checkout and install exactly the locked pac
 ```bash
 git pull --ff-only
 nvm use
+npm install --global npm@12.2.0
 npm ci
 ```
 
@@ -419,13 +432,29 @@ This command upgrades an existing completed installation. Fresh installations us
 successful migration, deploy the matching application revision and repeat the hosted
 verification. Never edit an already-applied migration.
 
+The application backup commands are:
+
+```bash
+npm run backup:export -- backups/DATE
+npm run backup:verify -- backups/DATE
+npm run backup:restore -- backups/DATE  # empty target database only
+```
+
+For a hosted database, use `backup:export:deploy` or `backup:restore:deploy`; these commands
+load the private `.env.deploy.local` file explicitly.
+
+See [encrypted local backup and restore](docs/backup-restore.md) for credential handling,
+retention, deletion and post-restore report regeneration.
+
 ## Local development
 
-Requirements: Node 22 (see `.nvmrc`), npm 10.9.8, and Postgres 16 or newer. Docker
-Compose is an optional local Postgres convenience; Docker is not required in production.
+Requirements: Node 24.21 (see `.nvmrc`), npm 12.2, and Postgres 16 or newer. Node 26
+is also supported for local development. Docker Compose is an optional local Postgres
+convenience; Docker is not required in production.
 
 ```bash
 nvm use
+npm install --global npm@12.2.0
 npm ci
 npm run local:setup
 npm run db:up

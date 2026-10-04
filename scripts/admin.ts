@@ -7,7 +7,7 @@ import { authDatabase, closeAuthPools } from "@/db/auth/connection";
 import { migrateIdentity, migrationLock } from "@/db/auth/migrate";
 import { hashPassword } from "@/lib/auth/passwords";
 import { inspectEnvironment } from "@/lib/config/environment";
-import { canServeWorkflows } from "@/lib/config/policy";
+import { canServeWorkflows, FINANCIAL_SCHEMA } from "@/lib/config/policy";
 nextEnv.loadEnvConfig(process.cwd());
 async function main() {
   if (process.env.VERCEL) throw new Error("Run this command locally as the deployment administrator.");
@@ -25,7 +25,7 @@ async function main() {
     await admin.transaction(async tx => {
       await migrationLock(tx);
       const state = await tx.execute<{ schema_version: number; size: string }>(sql`select schema_version,pg_database_size(current_database())::text size from core.system_installation`);
-      if (state.rows[0]?.schema_version !== 10 || BigInt(state.rows[0].size) + BigInt(storage) > 400_000_000n) throw new Error("Schema or database storage headroom is insufficient.");
+      if (state.rows[0]?.schema_version !== FINANCIAL_SCHEMA || BigInt(state.rows[0].size) + BigInt(storage) > 400_000_000n) throw new Error("Schema or database storage headroom is insufficient.");
       await tx.execute(sql`insert into ops.import_admission(singleton,verified_until,workflow_verified,remaining_imports,remaining_storage_bytes,reason)
         values(true,clock_timestamp()+make_interval(mins=>${minutes}),true,${imports},${storage},${reason})
         on conflict(singleton) do update set verified_until=excluded.verified_until,workflow_verified=true,remaining_imports=excluded.remaining_imports,remaining_storage_bytes=excluded.remaining_storage_bytes,reason=excluded.reason`);

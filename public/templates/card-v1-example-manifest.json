@@ -1,0 +1,13 @@
+{
+  "schemaVersion": "card-v1",
+  "accountId": "00000000-0000-4000-8000-000000000009",
+  "currency": "INR",
+  "coverageStart": "2026-09-01",
+  "coverageEnd": "2026-09-30",
+  "completeness": "complete",
+  "openingOutstanding": "5000.00",
+  "statementOutstanding": "5075.00",
+  "historyReason": "Synthetic opening debt; transactions before September are unknown.",
+  "paymentDueDate": "2026-10-20",
+  "minimumDue": "500.00"
+}

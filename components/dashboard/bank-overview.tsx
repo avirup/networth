@@ -7,7 +7,7 @@ import { ChartFrame, DataQualityIndicator, Disclosure, EmptyState, ErrorState, L
 import { monthLabel } from "@/lib/presentation/format";
 import type { BankActivityPage, BankOverview } from "@/db/reports/service";
 
-type View = "overview" | "accounts" | "activity";
+type View = "overview" | "accounts" | "activity" | "liabilities";
 type Load = { period: string; report: BankOverview | null; error: boolean };
 
 export function BankOverviewReport({ view = "overview" }: { view?: View }) {
@@ -40,8 +40,8 @@ export function BankOverviewReport({ view = "overview" }: { view?: View }) {
   return <div className="live-report" data-report-release={report.release.id}>
     <ReportQuality report={report} />
     {report.release.reloadedCurrent && <p className="release-notice" role="status">The earlier report expired, so every panel was reloaded from the current complete release.</p>}
-    {view === "accounts" ? <AccountReport report={report} /> : view === "activity" ? <ActivityPanel report={report} period={period} /> : <Overview report={report} period={period} />}
-    <p className="report-footnote">Household scope · release {report.release.id} · source revision {report.release.sourceRevision}. Foreign currency valuation, ownership-specific totals, cards, investments and performance remain unavailable until their evidenced modules are implemented.</p>
+    {view === "accounts" ? <AccountReport report={report} /> : view === "liabilities" ? <LiabilityReport report={report} /> : view === "activity" ? <ActivityPanel report={report} period={period} /> : <Overview report={report} period={period} />}
+    <p className="report-footnote">Household scope · release {report.release.id} · source revision {report.release.sourceRevision}. Foreign currency valuation, ownership-specific totals, investments and performance remain unavailable until their evidenced modules are implemented.</p>
   </div>;
 }
 
@@ -57,9 +57,10 @@ function ReportQuality({ report }: { report: BankOverview }) {
 function Overview({ report, period }: { report: BankOverview; period: string }) {
   return <>
     <section className="kpi-grid" aria-label="Published banking summary">
-      <ReportMetric label="Known net worth" value={report.summary.netWorthInr} note="Reconciled INR bank and cash positions" tone="cobalt" />
+      <ReportMetric label="Known net worth" value={report.summary.netWorthInr} note="Reconciled INR bank and card positions" tone="cobalt" />
       <ReportMetric label="Income this month" value={report.summary.monthlyIncomeInr} note="Recognized income; transfers excluded" tone="violet" />
       <ReportMetric label="Expenses this month" value={report.summary.monthlyExpenseInr} note="Recognized expenses; principal excluded" tone="coral" />
+      <ReportMetric label="Card outstanding" value={report.summary.knownLiabilitiesInr} note={report.summary.unknownAccountCount ? "Known debt; unknown accounts excluded" : "Current evidenced card debt"} tone="pink" />
     </section>
     <div className="insight-grid">
       <CashFlowPanel report={report} period={period} />
@@ -67,8 +68,26 @@ function Overview({ report, period }: { report: BankOverview; period: string }) 
     </div>
     <TrendPanel report={report} />
     <div className="published-grid"><AccountReport report={report} compact /><CategoryPanel report={report} period={period} /></div>
+    <LiabilityReport report={report} compact />
     <ActivityPanel report={report} period={period} compact />
   </>;
+}
+
+function LiabilityReport({ report, compact = false }: { report: BankOverview; compact?: boolean }) {
+  const cards = report.liabilities.cards;
+  return <section className="chart-frame liability-report"><header className="panel-header"><div><h2>{compact ? "Credit utilisation" : "Credit cards and facilities"}</h2><p>Current evidence as of {report.release.asOf}; statement values retain their own dates</p></div><strong><MoneyValue value={report.summary.knownLiabilitiesInr} /></strong></header>
+    {!cards.length ? <EmptyState title="No card report yet" action={<Link className="button" href="/dashboard/imports">Import a card statement</Link>}>Add standardized card evidence to track outstanding debt and shared limits.</EmptyState> : <>
+      {!!report.liabilities.facilities.length && <ul className="facility-list">{report.liabilities.facilities.map(facility => {
+        const utilization = facility.utilizationPercent === null ? null : Decimal.min(new Decimal(facility.utilizationPercent), 100).toNumber();
+        return <li key={facility.facilityId}><div className="facility-heading"><div><strong>{facility.name}</strong><span>{facility.accountIds.length} linked card{facility.accountIds.length === 1 ? "" : "s"}</span></div><span>{facility.utilizationPercent === null ? "Utilisation unavailable" : `${new Decimal(facility.utilizationPercent).toDecimalPlaces(1).toFixed()}% used`}</span></div>
+          <div className="utilization-track" aria-hidden="true"><span style={{ width: `${utilization ?? 0}%` }} className={facility.overLimitInr !== null && new Decimal(facility.overLimitInr).gt(0) ? "is-over" : ""} /></div>
+          <dl className="facility-values"><div><dt>Drawn</dt><dd><MoneyValue value={facility.drawnInr} reason={facility.reason ?? "Outstanding is unavailable"} /></dd></div><div><dt>Limit</dt><dd><MoneyValue value={facility.limitInr} reason={facility.reason ?? "Limit is unavailable"} /></dd></div><div><dt>Available</dt><dd><MoneyValue value={facility.availableCreditInr} reason={facility.reason ?? "Available credit is unavailable"} /></dd></div>{facility.overLimitInr !== null && new Decimal(facility.overLimitInr).gt(0) && <div><dt>Over limit</dt><dd><MoneyValue value={facility.overLimitInr} /></dd></div>}</dl>
+        </li>;
+      })}</ul>}
+      <ul className="card-liability-list">{cards.map(card => <li key={card.accountId}><div><strong>{card.name}</strong><span>{card.maskedReference ?? "No account reference"}</span></div><dl><div><dt>Current outstanding</dt><dd><MoneyValue value={card.currentOutstandingInr} reason={card.reason ?? "Current card balance is unavailable"} /></dd></div><div><dt>Statement</dt><dd><MoneyValue value={card.statementOutstandingInr} reason="Statement amount unavailable" />{card.statementDate && <small>{card.statementDate}</small>}</dd></div><div><dt>Minimum due</dt><dd><MoneyValue value={card.minimumDueInr} reason="Minimum due unavailable" />{card.paymentDueDate && <small>Due {card.paymentDueDate}</small>}</dd></div></dl></li>)}</ul>
+      {!compact && <Disclosure title="How card totals are calculated"><p>Purchases, interest and fees increase debt; refunds and repayments reduce it. Repayments do not become expenses. Shared facility limits are counted once, while credit balances remain separate from drawn debt. Statement and minimum-due values are evidence, not extra liabilities.</p></Disclosure>}
+    </>}
+  </section>;
 }
 
 function CashFlowPanel({ report, period }: { report: BankOverview; period: string }) {

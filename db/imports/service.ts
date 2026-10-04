@@ -20,6 +20,7 @@ const scope = (householdId: string) => eq(f.accounts.householdId, householdId);
 export async function importStatus(tx: Transaction, actor: Actor) {
   requireSchema(actor);
   const accounts = await tx.select({ id: f.accounts.id, name: f.accounts.name, currency: f.accounts.currency, kind: f.accounts.kind }).from(f.accounts).where(scope(actor.householdId)).orderBy(f.accounts.name).limit(1000);
+  const facilities = await tx.select({ id: f.creditFacilities.id, name: f.creditFacilities.name, currency: f.creditFacilities.currency }).from(f.creditFacilities).where(eq(f.creditFacilities.householdId, actor.householdId)).orderBy(f.creditFacilities.name).limit(1000);
   const revision = (await tx.select().from(f.revisions).where(eq(f.revisions.householdId, actor.householdId)))[0]!.revision;
   const readiness = await tx.execute<{ ready: boolean; reason: string }>(sql`select workflow_verified and verified_until>clock_timestamp() and remaining_imports>0 and remaining_storage_bytes>0 and pg_database_size(current_database())<400000000 as ready, reason from ops.import_admission where singleton`);
   const history = await tx.execute(sql`select b.id,b.revision,b.row_count as "rowCount",b.confirmed_at as "confirmedAt", a.name as "accountName",o.state,d.state as "deliveryState",d.total_attempts as "deliveryAttempts",cr.id as "calculationRunId",cr.state as "calculationState",cb.state as "planningExecutionState",cb.reason as "planningPauseReason",cb.window_attempts as "planningWindowAttempts",cb.total_attempts::text as "planningTotalAttempts",bc.state as "bankCalculationState",bc.page as "bankCalculationPage",bc.as_of::text as "bankCalculationAsOf",balance.state as "bankBalanceState",balance.page as "bankBalancePage",release.state as "reportState",release.id as "reportReleaseId"
@@ -29,7 +30,7 @@ export async function importStatus(tx: Transaction, actor: Actor) {
     left join ops.calculation_budget cb on cb.run_id=cr.id and cb.household_id=b.household_id left join ops.bank_candidate bc on bc.run_id=cr.id and bc.household_id=b.household_id left join ops.bank_balance_candidate balance on balance.run_id=cr.id and balance.household_id=b.household_id
     left join ops.report_release release on release.run_id=cr.id and release.household_id=cr.household_id
     where b.household_id=${actor.householdId} order by b.revision desc limit 100`);
-  return { accounts, revision, ready: readiness.rows[0]?.ready ?? false, reason: readiness.rows[0]?.ready ? "Capacity verified; confirmation will check again." : "Confirmation paused. A verified workflow and available storage/provider capacity are required.", history: history.rows };
+  return { accounts, facilities, revision, ready: readiness.rows[0]?.ready ?? false, reason: readiness.rows[0]?.ready ? "Capacity verified; confirmation will check again." : "Confirmation paused. A verified workflow and available storage/provider capacity are required.", history: history.rows };
 }
 
 type Match = { rowId: string; eventId: string; kind: string; effectiveDate: string; reason: string };

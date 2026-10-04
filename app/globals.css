@@ -81,6 +81,7 @@ dialog { color: var(--ink); background: var(--surface); }dialog::backdrop { back
 .sparkline { width: 100%; height: 78px; margin-top: auto; overflow: visible; }.sparkline path { fill: none; stroke: var(--tone); stroke-width: 2.25; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }.sparkline circle { fill: var(--surface); stroke: var(--tone); stroke-width: 2; vector-effect: non-scaling-stroke; }
 .insight-grid { display: grid; grid-template-columns: minmax(0, 1fr) 192px; gap: 16px; margin-top: var(--content-gap); }
 .chart-frame, .portfolio-panel { min-width: 0; border: 1px solid var(--line); border-radius: var(--radius-panel); background: var(--surface); overflow: hidden; }.panel-header { display: flex; align-items: center; justify-content: space-between; gap: 14px; min-height: 76px; padding: 18px 20px; border-bottom: 1px solid var(--line); }.panel-header h2 { margin: 0; font-size: 15px; font-weight: 600; line-height: 1.35; letter-spacing: -.015em; }.panel-header p { margin: 5px 0 0; color: var(--muted); font-size: 10px; }.panel-header > strong { max-width: 45%; color: var(--accent); font-size: 11px; text-align: right; }
+.panel-header > strong { flex-shrink: 0; white-space: nowrap; }
 .expense-callout { min-width: 0; min-height: 250px; display: flex; flex-direction: column; justify-content: space-between; gap: 24px; padding: 20px 18px; border: 1px solid #ffd5ca; border-radius: var(--radius-panel); background: #fff1ed; }.expense-callout h2 { margin: 0; color: #8e3e33; font-size: 13px; font-weight: 600; }.expense-callout p { margin: 0; font-size: 19px; line-height: 1.5; letter-spacing: -.02em; }.expense-callout strong { color: var(--negative); font-weight: 700; }.expense-callout span { color: var(--accent); font-weight: 600; }.expense-callout time { color: #7f362d; font-weight: 600; }
 .sample-chart { overflow-x: auto; }.dashboard-flow-svg { width: 100%; height: auto; min-width: 350px; font-family: inherit; }.insight-grid .dashboard-flow-svg { min-width: 560px; }
 .dashboard-sankey-link { fill: none; stroke: var(--link-color); stroke-width: var(--link-width); stroke-opacity: .23; }.dashboard-sankey-node { fill: var(--node-color); }.dashboard-sankey-label { fill: var(--ink); font-size: 9.5px; font-weight: 600; }.dashboard-sankey-value { fill: var(--muted); font-size: 8.5px; font-variant-numeric: tabular-nums; }
@@ -99,6 +100,7 @@ dialog { color: var(--ink); background: var(--surface); }dialog::backdrop { back
 .activity-report { margin-top: var(--content-gap); }.activity-report:first-child { margin-top: 0; }.activity-list { list-style: none; margin: 0; padding: 0 20px; }.activity-list > li { border-bottom: 1px solid var(--line); }.activity-list > li:last-child { border-bottom: 0; }.activity-list details { padding: 15px 0; }.activity-list summary { display: flex; align-items: center; justify-content: space-between; gap: 18px; cursor: pointer; list-style-position: outside; font-size: 12px; }.activity-list summary > span:first-child { min-width: 0; }.activity-list summary strong, .activity-list summary small { display: block; overflow-wrap: anywhere; }.activity-list summary small { margin-top: 4px; color: var(--muted); font-size: 10px; font-weight: 400; }.activity-list summary .money { flex-shrink: 0; font-weight: 600; }.activity-list dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 20px; margin: 14px 0 0; padding: 14px; border-radius: 10px; background: var(--background); }.activity-list dl div { min-width: 0; }.activity-list dt { color: var(--muted); font-size: 9px; }.activity-list dd { margin: 3px 0 0; font-size: 10px; overflow-wrap: anywhere; }.activity-more { padding: 16px 20px 20px; text-align: center; }
 .feature-panel { padding: clamp(20px, 4vw, 40px); background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-panel); }.feature-panel > h2 { font-size: 24px; font-weight: 600; }.feature-panel > p { font-size: 13px; color: var(--muted); margin-top: 10px; }.feature-panel .empty-state { padding-inline: 0; }.import-steps { display: flex; flex-wrap: wrap; gap: 16px 32px; padding: 24px 0; list-style-position: inside; list-style-type: decimal; color: var(--muted); font-size: 12px; }
 .access-layout { max-width: 680px; margin: 0 auto; padding: clamp(32px, 8vw, 88px) 24px; }.access-panel { margin-top: 60px; }.access-panel h1 { margin: 0 0 24px; font-size: clamp(30px, 5vw, 44px); line-height: 1.2; letter-spacing: -.03em; font-weight: 700; }.access-panel > p { color: var(--muted); font-size: 14px; margin-block: 18px; }.access-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 16px; margin-top: 28px; }.access-note { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--line-strong); color: var(--muted); font-size: 12px; }
+.status-list { display: grid; gap: 0; margin: 24px 0; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); overflow: hidden; }.status-list div { display: grid; grid-template-columns: minmax(150px, .8fr) minmax(0, 1.2fr); gap: 20px; padding: 14px 16px; border-bottom: 1px solid var(--line); }.status-list div:last-child { border-bottom: 0; }.status-list dt { color: var(--muted); font-size: 12px; font-weight: 600; }.status-list dd { margin: 0; font-size: 13px; font-variant-numeric: tabular-nums; }
 @container portfolio (max-width: 640px) {
   .data-table, .data-table tbody { display: block; }.data-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
   .data-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; padding: 16px 18px; }.data-row td { padding: 0; text-align: left; min-width: 0; }.data-row td:first-child { grid-column: 1 / -1; }.data-row td:not(:first-child)::before { content: attr(data-label); display: block; margin-bottom: 5px; font-size: 9px; color: var(--faint); }.detail-row:not([hidden]), .detail-row td { display: block; }
@@ -167,6 +169,7 @@ dialog { color: var(--ink); background: var(--surface); }dialog::backdrop { back
 .import-records li { padding: 16px 0; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
 .import-success { background: var(--surface); padding: 20px; border-radius: 14px; }
 @media (max-width: 700px) { .import-fields { grid-template-columns: 1fr; }.import-workspace .security-section { padding: 18px; }.import-actions { align-items: stretch; }.import-actions > * { max-width: 100%; }.import-intro h2 { font-size: 21px; } }
+@media (max-width: 520px) { .status-list div { grid-template-columns: 1fr; gap: 4px; } }
 /* Keep hidden table labels inside the review's containing block. */
 .import-review-panel { container: import-review / inline-size; position: relative; }
 .import-table-scroll { position: relative; }
@@ -193,3 +196,35 @@ dialog { color: var(--ink); background: var(--surface); }dialog::backdrop { back
   .import-table td:nth-child(3), .import-table td:nth-child(4), .import-table td:nth-child(5) { grid-column: 2; }
   .import-row-decision { grid-template-columns: minmax(0,1fr); }
 }
+.import-switch { display:flex; gap:4px; width:max-content; max-width:100%; margin:0 0 20px; padding:4px; border:1px solid var(--line); border-radius:12px; background:var(--surface); }
+.import-switch button { min-height:40px; padding:8px 16px; border:0; border-radius:8px; background:transparent; color:var(--muted); font:inherit; font-weight:600; cursor:pointer; }
+.import-switch button:hover { color:var(--ink); background:var(--page); }
+.import-switch button.is-active { color:var(--surface); background:var(--accent); }
+.import-switch button:focus-visible { outline:3px solid color-mix(in srgb,var(--hero) 32%,transparent); outline-offset:2px; }
+.facility-list,.card-liability-list { list-style:none; margin:0; padding:0; display:grid; gap:16px; }
+.facility-list { margin-bottom:20px; }
+.facility-list > li,.card-liability-list > li { padding:16px; border:1px solid var(--line); border-radius:12px; }
+.facility-heading,.card-liability-list > li { display:flex; justify-content:space-between; gap:20px; }
+.facility-heading > div,.card-liability-list > li > div { display:grid; gap:3px; }
+.facility-heading span,.card-liability-list span,.card-liability-list small { color:var(--muted); font-size:.78rem; }
+.utilization-track { height:8px; margin:14px 0; overflow:hidden; border-radius:5px; background:var(--page); }
+.utilization-track span { display:block; height:100%; border-radius:inherit; background:var(--hero); }
+.utilization-track span.is-over { background:var(--coral); }
+.facility-values,.card-liability-list dl { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin:0; }
+.facility-values div,.card-liability-list dl div { display:grid; gap:3px; }
+.facility-values dt,.card-liability-list dt { color:var(--muted); font-size:.75rem; }
+.facility-values dd,.card-liability-list dd { margin:0; font-variant-numeric:tabular-nums; }
+.card-liability-list dl { flex:1; max-width:620px; }
+@media (max-width:700px) { .facility-heading,.card-liability-list > li { display:grid; }.facility-values,.card-liability-list dl { grid-template-columns:1fr; }.import-switch { width:100%; }.import-switch button { flex:1; } }
+.kpi-grid { grid-template-columns:repeat(4,minmax(0,1fr)); }
+.card-review-panel { container:card-review / inline-size; }
+@container card-review (max-width:760px) {
+  .card-review-panel .import-table,.card-review-panel .import-table tbody { display:block; }
+  .card-review-panel .import-table thead { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); }
+  .card-review-panel .import-table tr { display:grid; grid-template-columns:1fr 1fr; gap:14px; padding:18px 0; border-top:1px solid var(--line); }
+  .card-review-panel .import-table td { display:grid; gap:8px; min-width:0; padding:0; border:0; white-space:normal; }
+  .card-review-panel .import-table td:first-child,.card-review-panel .import-table td:last-child { grid-column:1 / -1; }
+  .card-review-panel .import-table select,.card-review-panel .import-table input { width:100%; min-height:42px; }
+}
+@media (max-width:1050px) { .kpi-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media (max-width:900px) { .kpi-grid { grid-template-columns:1fr; } }

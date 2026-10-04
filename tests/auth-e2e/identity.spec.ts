@@ -39,6 +39,16 @@ test("setup, codes, sign-in, invitation, recovery and access protection", async 
   await page.getByRole("button", { name: "Confirm password", exact: true }).click();
   await expect(page.getByText("Password confirmed for five minutes.")).toBeVisible();
   await workflowResumeFlow(page);
+  await page.goto("/status");
+  await expect(page.getByRole("heading", { name: "Installation status" })).toBeVisible();
+  await expect(page.getByText("Database storage")).toBeVisible();
+  await expect(page.getByText("No completed export recorded")).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath("installation-status-desktop.png"), fullPage: true });
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: testInfo.outputPath("installation-status-mobile.png"), fullPage: true });
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto("/dashboard/settings");
   await page.getByLabel("Member email").fill("viewer@example.test");
   await page.getByRole("button", { name: "Create invitation" }).click();
   await expect(page.locator(".private-link")).toBeVisible();

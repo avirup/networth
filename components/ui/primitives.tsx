@@ -12,8 +12,8 @@ export function MoneyValue({ value, reason = "Value not available", fractionDigi
 }
 export type Quality = "complete" | "incomplete" | "stale" | "paused";
 const qualityLabels: Record<Quality, string> = { complete: "Complete report", incomplete: "Incomplete data", stale: "Last available report", paused: "Updates paused" };
-export function DataQualityIndicator({ state, children }: { state: Quality; children?: ReactNode }) {
-  return <div className={`quality quality-${state}`} role="status"><strong>{qualityLabels[state]}</strong>{children && <span>{children}</span>}</div>;
+export function DataQualityIndicator({ state, label, children }: { state: Quality; label?: string; children?: ReactNode }) {
+  return <div className={`quality quality-${state}`} role="status"><strong>{label ?? qualityLabels[state]}</strong>{children && <span>{children}</span>}</div>;
 }
 export function EmptyState({ title, children, action }: { title: string; children: ReactNode; action?: ReactNode }) {
   return <div className="empty-state"><h2>{title}</h2><p>{children}</p>{action}</div>;

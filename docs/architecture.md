@@ -36,14 +36,13 @@ schema, configuration and verified workflows are ready. It never applies migrati
 The current phase intentionally cannot report financial readiness. Operator startup diagnostics
 identify missing/invalid variable names; the public HTTP response does not.
 
-Identity access accepts schema versions 1–8; financial readiness requires version 8. Missing, invalid, older or
-newer versions refuse application operations; an authenticated owner retains limited
+Identity status access tolerates a readable migration mismatch; financial operations require
+schema version 13. Missing, invalid, older or newer versions refuse application operations; an authenticated owner retains limited
 status access if the identity contract remains readable. Setup and local upgrade commands
 apply checksummed migrations under a shared advisory lock. No startup migration runs.
 
-The local Inngest endpoint registers an empty function list. Hosted GET/POST/PUT
-are disabled until signed-handler tests and real workflow authorization exist in Step 6.
-No cron, schedule, keep-alive or background recalculation is deployed.
+The signed Inngest endpoint registers bounded calculation and daily recovery functions.
+There is no keep-alive, idle polling or periodic full-history recalculation.
 
 The runtime login is distinct from the migration administrator. Verified queries use
 transaction-local role, membership and session context with FORCE RLS. Local preparation
@@ -56,8 +55,9 @@ documents, ignored UI mockups, fonts from those mockups, or design-tool metadata
 
 ## Dependency choices
 
-Node 22 and npm 10 are the selected local/runtime toolchain. Dependencies are exact
-and the lockfile defines the resolved tree. Development and production builds use
+Node 24 LTS is the deployment default, Node 26 is supported for local development, and
+npm 12 is the selected package manager. Dependencies are exact and the lockfile defines
+the resolved tree. Development and production builds use
 Next.js's supported Webpack option because Turbopack's internal CSS-worker port
 binding failed in the local execution sandbox. Auth.js v5 is explicitly pinned to a beta
 with Next.js 16 peer support; its credentials behavior is regression-tested before
@@ -68,16 +68,15 @@ their implementation steps rather than installing every future module now.
 Next.js automatic agent-rule generation is disabled (`agentRules: false`) so running
 the development server preserves the project's authored `AGENTS.md`.
 
-Vite 7.3.6 is explicitly pinned within Vitest 4's supported range. The automatically
-selected Vite 8 toolchain triggered npm 10 peer-resolution failures; a lock generated
-with npm 12 also included platform-specific extraneous entries that npm 10 could not
-install. Generate and verify the project lock with the documented npm 10 toolchain.
+Vite 8 is pinned within Vitest 5's supported range, and the lockfile is generated with
+the npm version declared in `packageManager`. npm 12's dependency-script allowlist is
+committed in `package.json`; review scripts before changing that policy.
 
-Two narrow development-tool overrides patch transitive dependencies: the legacy
-Drizzle loader's esbuild is pinned to 0.25.12 and Inngest CLI's adm-zip to 0.6.1.
-Verify Drizzle generation and CLI startup after changing these overrides; remove them
-when upstream packages incorporate compatible fixes. Do not apply an audit fix that
-downgrades the selected tools to unrelated older releases.
+Narrow overrides keep the legacy Drizzle loader on its compatible esbuild release,
+update Inngest CLI's archive reader, and patch transitive gRPC and brace-expansion
+advisories. Verify Drizzle generation and CLI startup after changing these overrides;
+remove them when upstream packages incorporate compatible fixes. Do not apply an audit
+fix that downgrades the selected tools to unrelated older releases.
 
 Technical references:
 
@@ -111,3 +110,9 @@ administrator reviews every shared free-tier meter and records a short bounded l
 Phase 7 extends the live bank dashboard with release-pinned drilldowns, trends and reconciled cash-flow views. Cards,
 investments, ownership allocation, dated FX and performance remain unavailable until their
 product-specific phases.
+
+Phase 8 adds owner-password-authorized encrypted local exports. One repeatable-read snapshot
+is split into authenticated parts below the response budget, with an encrypted manifest,
+checksums, schema/rule versions and control totals. Restore accepts only an empty migrated
+database, replaces every login secret, preserves source identifiers and queues report
+regeneration instead of copying disposable generations. See [backup and restore](backup-restore.md).
